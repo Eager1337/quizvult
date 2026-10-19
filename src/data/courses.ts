@@ -101,7 +101,28 @@ const lessonTopicsByCategory: Record<string, string[]> = {
 };
 
 
+const customCourseLessons: Record<string, Lesson[]> = {
+  "Python Programming": [
+    { title: "1. Run Python and understand statements", duration: "10 min", content: "## Learning goals\nRun a Python script and distinguish values, expressions, and statements.\n\n## Example\n```python\nname = \"Ada\"\nprint(f\"Hello, {name}!\")\n```\nThe assignment stores a string in `name`; the f-string inserts its value into the message. Python executes statements in order.\n\n## Practice\nChange the name, print a second message, and predict the output before running it.\n\n## Check yourself\nExplain the difference between `name` and the string `\"name\"`.\n\nSource: Python official tutorial, https://docs.python.org/3/tutorial/" },
+    { title: "2. Variables, types, and input", duration: "12 min", content: "## Core idea\nVariables refer to values. Common built-in types include `str`, `int`, `float`, and `bool`. Input from `input()` is text, so convert it before arithmetic.\n\n## Worked example\n```python\nage_text = input(\"Age: \")\nage = int(age_text)\nprint(age + 1)\n```\nIf the user types `18`, the program prints `19`. If they type words, `int()` raises `ValueError`.\n\n## Practice\nAsk for two numbers and print their sum. Add a `try/except ValueError` to handle invalid input.\n\n## Common mistake\nAdding two strings joins them: `\"2\" + \"3\"` is `\"23\"`, not `5`.\n\nSource: https://docs.python.org/3/tutorial/" },
+    { title: "3. Decisions with if, elif, and else", duration: "12 min", content: "## Core idea\nConditions evaluate to `True` or `False`. Python uses indentation to define each block. Use `==` to compare values and `=` to assign them.\n\n## Worked example\n```python\nscore = 72\nif score >= 80:\n    grade = \"A\"\nelif score >= 60:\n    grade = \"B\"\nelse:\n    grade = \"C\"\nprint(grade)  # B\n```\nOrder matters: the first matching branch runs.\n\n## Practice\nWrite a temperature classifier with at least three ranges. Test values on each boundary, such as 0 and 1.\n\n## Check yourself\nWhy might checking a broad condition before a narrow condition cause a bug?\n\nSource: https://docs.python.org/3/tutorial/" },
+    { title: "4. Loops and collections", duration: "15 min", content: "## Core idea\nA `for` loop visits items in an iterable; a `while` loop repeats while its condition stays true. Lists preserve order and can hold multiple values.\n\n## Worked example\n```python\nprices = [10, 15, 5]\ntotal = 0\nfor price in prices:\n    total += price\nprint(total)  # 30\n```\nThe accumulator starts at zero and adds each price once.\n\n## Practice\nFind the largest number in a list without using `max()`. Test an empty list and decide how your code should handle it.\n\n## Common mistakes\nInfinite `while` loops, off-by-one ranges, and modifying a list while iterating over it.\n\nSource: https://docs.python.org/3/tutorial/" },
+    { title: "5. Functions, errors, and testing", duration: "18 min", content: "## Core idea\nFunctions package reusable behavior. Parameters are inputs; `return` sends a result to the caller. Handle expected invalid input and test normal plus boundary cases.\n\n## Worked example\n```python\ndef discount(price, rate):\n    if price < 0 or not 0 <= rate <= 1:\n        raise ValueError(\"Invalid price or rate\")\n    return price * (1 - rate)\n\nassert discount(100, 0.2) == 80\n```\nThe assertion checks an expected result; it does not prove every case works.\n\n## Practice\nWrite a function that converts Celsius to Fahrenheit. Test freezing point, room temperature, and a negative temperature.\n\n## Further reading\nPython tutorial and library documentation: https://docs.python.org/3/tutorial/ and https://docs.python.org/3/library/unittest.html" },
+  ],
+  "Web Development 101": [
+    { title: "1. How a web page reaches the browser", duration: "10 min", content: "## The request-response cycle\nA browser requests a URL; a server or CDN responds with HTML, CSS, JavaScript, images, and other resources. HTML describes structure, CSS styles it, and JavaScript adds behavior.\n\n## Example\n```html\n<h1>Welcome</h1>\n<p>This is my first page.</p>\n```\nThe browser parses the HTML and builds a document tree. A page can work without JavaScript, so start with semantic HTML.\n\n## Practice\nCreate a page with a title, a main heading, two paragraphs, and a link. Check that the link has a meaningful destination.\n\nFurther reading: MDN Getting started, https://developer.mozilla.org/en-US/docs/Learn" },
+    { title: "2. Semantic HTML and accessible forms", duration: "12 min", content: "## Core idea\nUse elements for their meaning: `<main>`, `<nav>`, `<article>`, headings in logical order, and explicit form labels. Semantic structure helps assistive technology, search engines, and maintainers.\n\n## Example\n```html\n<label for=\"email\">Email address</label>\n<input id=\"email\" name=\"email\" type=\"email\" required>\n<button type=\"submit\">Join</button>\n```\nA visible label tells users what the field expects; the browser can validate the email format, but the server must still validate submitted data.\n\n## Practice\nBuild a contact form with labels, required fields, and helpful error text. Navigate it using only the keyboard.\n\nFurther reading: https://developer.mozilla.org/en-US/docs/Learn/Accessibility" },
+    { title: "3. CSS layout with Flexbox and Grid", duration: "15 min", content: "## Core idea\nUse Flexbox for arranging items along one main axis and Grid for two-dimensional rows and columns. Prefer responsive constraints over fixed widths that break on small screens.\n\n## Example\n```css\n.cards {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));\n  gap: 1rem;\n}\n```\nThe browser fits as many columns as can satisfy the minimum width, then wraps the rest.\n\n## Practice\nCreate three cards and test at a narrow phone width and a wide desktop width. Check overflow and text readability.\n\nFurther reading: https://developer.mozilla.org/en-US/docs/Learn/CSS" },
+    { title: "4. JavaScript events and DOM updates", duration: "15 min", content: "## Core idea\nJavaScript responds to events such as clicks and form submissions. Query elements deliberately, validate input, and update the DOM without injecting untrusted strings as HTML.\n\n## Example\n```html\n<button id=\"counter\">Add one</button>\n<p id=\"value\">0</p>\n<script>\nlet count = 0;\ndocument.querySelector('#counter').addEventListener('click', () => {\n  count += 1;\n  document.querySelector('#value').textContent = String(count);\n});\n</script>\n```\nUsing `textContent` treats the value as text instead of parsing it as HTML.\n\n## Practice\nBuild a counter with increment and reset controls. Ensure each button has a clear accessible name.\n\nFurther reading: https://developer.mozilla.org/en-US/docs/Web/JavaScript" },
+    { title: "5. Fetch data, handle errors, and deploy", duration: "18 min", content: "## Core idea\nA frontend request can fail because of network issues, authorization, server errors, or invalid data. Check HTTP status, show a loading state, and provide a useful error state. Never expose private API keys in browser code.\n\n## Example\n```js\nasync function loadUsers() {\n  const response = await fetch('/api/users');\n  if (!response.ok) throw new Error('Could not load users');\n  return response.json();\n}\n```\nProduction code should catch the error at the UI boundary and show a retry option.\n\n## Practice\nConnect a page to a public test API; show loading, success, empty, and failure states. Then deploy and test the deployed URL on mobile.\n\nFurther reading: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API" },
+  ],
+  "Python Programming": [
+    { title: "1. Run Python and understand statements", duration: "10 min", content: "## Learning goals\nRun a Python script and distinguish values, expressions, and statements.\n\n## Example\n```python\nname = \"Ada\"\nprint(f\"Hello, {name}!\")\n```\nThe assignment stores a string in `name`; the f-string inserts its value into the message. Python executes statements in order.\n\n## Practice\nChange the name, print a second message, and predict the output before running it.\n\n## Check yourself\nExplain the difference between `name` and the string `\"name\"`.\n\nSource: https://docs.python.org/3/tutorial/" }
+  ]
+};
+
 function generateLessons(courseTitle: string, categoryId: string): Lesson[] {
+  if (customCourseLessons[courseTitle]) return customCourseLessons[courseTitle];
   const topics = lessonTopicsByCategory[categoryId] || [];
   const durations = ['5 min', '8 min', '10 min', '12 min', '15 min', '18 min', '20 min'];
   
@@ -520,6 +541,33 @@ const genericQuestionTemplates: { q: string; opts: string[]; ci: number; exp: st
   { q: 'How does visualization help in learning {T}?', opts: ['It does not help', 'Creating mental images enhances understanding and recall', 'Only for visual learners', 'Visualization is distracting'], ci: 1, exp: 'Mental visualization creates additional memory pathways, improving both understanding and recall.' },
 ];
 
+const courseQuestionBanks: Record<string, Question[]> = {
+  "Python Programming": [
+    { question: "What does print(f\"Hello, {name}\") do when name is \"Ada\"?", options: ["Prints Hello, Ada", "Prints the literal {name}", "Creates a variable", "Raises a syntax error"], correctIndex: 0, difficulty: "Beginner", explanation: "An f-string evaluates expressions inside braces and inserts their values into the resulting string." },
+    { question: "What type does input() return by default?", options: ["int", "str", "bool", "float"], correctIndex: 1, difficulty: "Beginner", explanation: "input() returns text. Convert it explicitly before doing numeric arithmetic." },
+    { question: "What is the result of 2 ** 3 in Python?", options: ["6", "8", "9", "5"], correctIndex: 1, difficulty: "Beginner", explanation: "The ** operator performs exponentiation: 2 to the power of 3 equals 8." },
+    { question: "Which keyword sends a value back from a function?", options: ["yielded", "break", "return", "send"], correctIndex: 2, difficulty: "Beginner", explanation: "return exits the function and supplies a result to the caller." },
+    { question: "What is printed by sum([2, 3, 4])?", options: ["9", "234", "7", "None"], correctIndex: 0, difficulty: "Intermediate", explanation: "sum() adds the numeric items in the iterable: 2 + 3 + 4 = 9." },
+    { question: "Why can int(input()) raise ValueError?", options: ["input always returns an integer", "The entered text may not represent an integer", "int only accepts floats", "input cannot read keyboard input"], correctIndex: 1, difficulty: "Intermediate", explanation: "Converting text such as 'hello' to an integer fails, so robust programs validate or catch the exception." },
+    { question: "What does a list comprehension [n*n for n in range(3)] produce?", options: ["[1, 4, 9]", "[0, 1, 2]", "[0, 1, 4]", "[0, 2, 4]"], correctIndex: 2, difficulty: "Intermediate", explanation: "range(3) yields 0, 1, 2; squaring each gives 0, 1, 4." },
+    { question: "What is a key reason to use a with statement when opening a file?", options: ["It encrypts the file", "It automatically closes the file when the block exits", "It prevents every possible exception", "It makes file reads asynchronous"], correctIndex: 1, difficulty: "Intermediate", explanation: "A context manager handles cleanup, including closing the file if an exception occurs." },
+    { question: "What is the purpose of a unit test?", options: ["Prove software has no bugs", "Check a small unit of behavior against expected results", "Replace all integration tests", "Make code run faster"], correctIndex: 1, difficulty: "Advanced", explanation: "Unit tests provide repeatable checks of specific behavior, but passing tests cannot prove the absence of all defects." },
+    { question: "Why are mutable default arguments often dangerous in Python?", options: ["They are recreated on every call", "The same object can be reused across calls", "They cannot contain values", "They are always immutable"], correctIndex: 1, difficulty: "Advanced", explanation: "A default expression is evaluated once when the function is defined, so a mutable object may retain state between calls." }
+  ],
+  "Web Development 101": [
+    { question: "Which technology primarily defines the structure and meaning of a web page?", options: ["HTML", "CSS", "SQL", "DNS"], correctIndex: 0, difficulty: "Beginner", explanation: "HTML supplies the document structure and semantic elements." },
+    { question: "What is CSS mainly used for?", options: ["Storing database records", "Styling and layout", "Routing network packets", "Authenticating users"], correctIndex: 1, difficulty: "Beginner", explanation: "CSS controls presentation, including typography, colors, spacing, and layout." },
+    { question: "Why should a form input have a connected label?", options: ["It automatically encrypts input", "It improves accessible identification of the field", "It replaces server validation", "It prevents all spam"], correctIndex: 1, difficulty: "Beginner", explanation: "A label helps users and assistive technologies understand a field and gives it a larger clickable target." },
+    { question: "Which CSS layout tool is designed for rows and columns together?", options: ["Grid", "Float only", "Text-align", "z-index"], correctIndex: 0, difficulty: "Beginner", explanation: "CSS Grid is a two-dimensional layout system." },
+    { question: "What does addEventListener('click', handler) do?", options: ["Runs handler when the click event occurs", "Runs handler only during build", "Adds a CSS class automatically", "Sends a database query automatically"], correctIndex: 0, difficulty: "Intermediate", explanation: "It registers a function to respond when the specified event occurs on the element." },
+    { question: "Why is textContent safer than assigning untrusted input to innerHTML?", options: ["It executes scripts faster", "It inserts text without parsing it as HTML", "It validates database permissions", "It encrypts the content"], correctIndex: 1, difficulty: "Intermediate", explanation: "textContent treats input as text, avoiding HTML interpretation that can create injection risks." },
+    { question: "What should frontend code check after fetch() returns a Response?", options: ["Only that the promise resolved", "response.ok or status before assuming the request succeeded", "The browser's font list", "The current CSS theme"], correctIndex: 1, difficulty: "Intermediate", explanation: "fetch resolves for HTTP errors such as 404 and 500; check response.ok or status explicitly." },
+    { question: "Where should a private API key for a paid service be stored?", options: ["In a public JavaScript bundle", "In a public HTML meta tag", "On a trusted server-side environment", "In a CSS custom property"], correctIndex: 2, difficulty: "Intermediate", explanation: "Browser code is visible to users. Keep private keys server-side and expose only safe, limited public configuration." },
+    { question: "What is the main purpose of a responsive layout?", options: ["Force every screen to have the same width", "Adapt the interface to different viewport sizes", "Disable keyboard navigation", "Replace semantic HTML"], correctIndex: 1, difficulty: "Advanced", explanation: "Responsive design adapts layout and content to varied screens and input methods." },
+    { question: "Why is server-side validation still required when a form uses browser validation?", options: ["Browser validation is impossible", "Clients can bypass or modify browser-side checks", "It makes every input valid", "It replaces authentication"], correctIndex: 1, difficulty: "Advanced", explanation: "Client-side checks improve usability but are not a security boundary; validate untrusted input on the server." }
+  ]
+};
+
 function isValidQuestion(question: Question): boolean {
   return Boolean(
     question.question.trim() &&
@@ -534,17 +582,12 @@ function isValidQuestion(question: Question): boolean {
   );
 }
 
-function generateQuestions(_courseTitle: string, categoryId: string): Question[] {
+function generateQuestions(courseTitle: string, categoryId: string): Question[] {
   const categoryQs = (questionBankByCategory[categoryId] || []).filter(isValidQuestion);
-  // Keep validated subject-bank questions instead of padding every course with generic filler.
-  return categoryQs.map((question, index) => ({
-    ...question,
-    difficulty: index < Math.ceil(categoryQs.length * 0.4)
-      ? 'Beginner'
-      : index < Math.ceil(categoryQs.length * 0.75)
-        ? 'Intermediate'
-        : 'Advanced',
-  }));
+  // Difficulty is only assigned when a course has a deliberately authored, leveled bank.
+  // Category-level fallback questions remain ungraded by difficulty instead of receiving arbitrary labels.
+  const curated = courseQuestionBanks[courseTitle];
+  return (curated || categoryQs).filter(isValidQuestion);
 }
 
 function generateCourseId(title: string): string {
