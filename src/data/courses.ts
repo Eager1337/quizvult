@@ -520,9 +520,23 @@ const genericQuestionTemplates: { q: string; opts: string[]; ci: number; exp: st
   { q: 'How does visualization help in learning {T}?', opts: ['It does not help', 'Creating mental images enhances understanding and recall', 'Only for visual learners', 'Visualization is distracting'], ci: 1, exp: 'Mental visualization creates additional memory pathways, improving both understanding and recall.' },
 ];
 
+function isValidQuestion(question: Question): boolean {
+  return Boolean(
+    question.question.trim() &&
+    question.explanation.trim() &&
+    Array.isArray(question.options) &&
+    question.options.length === 4 &&
+    question.options.every(option => typeof option === 'string' && option.trim()) &&
+    new Set(question.options.map(option => option.trim().toLowerCase())).size === question.options.length &&
+    Number.isInteger(question.correctIndex) &&
+    question.correctIndex >= 0 &&
+    question.correctIndex < question.options.length
+  );
+}
+
 function generateQuestions(_courseTitle: string, categoryId: string): Question[] {
-  const categoryQs = questionBankByCategory[categoryId] || [];
-  // Keep curated subject-bank questions instead of padding every course with generic filler.
+  const categoryQs = (questionBankByCategory[categoryId] || []).filter(isValidQuestion);
+  // Keep validated subject-bank questions instead of padding every course with generic filler.
   return categoryQs.map((question, index) => ({
     ...question,
     difficulty: index < Math.ceil(categoryQs.length * 0.4)
