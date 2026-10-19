@@ -1,7 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowDownToLine, ArrowUpFromLine, BriefcaseBusiness, CalendarDays, CheckCircle2,
+  ArrowDownToLine, CalendarDays,
   Compass, FileText, FolderKanban, GraduationCap, LoaderCircle, LockKeyhole,
   MapPin, Plus, Sparkles, Trash2, UploadCloud, WandSparkles, X,
 } from "lucide-react";
@@ -114,7 +114,7 @@ const Workspace = () => {
     const next = items.filter(x => x.id !== item.id); setItems(next); localStorage.setItem(localKey, JSON.stringify(next));
   };
 
-  const uploadFile = async (event: FormEvent<HTMLInputElement>) => {
+  const uploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
     if (!file) return;
@@ -171,7 +171,7 @@ const Workspace = () => {
       const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
       const response = await fetch(`${base}/functions/v1/study-assistant`, {
         method: "POST", headers: { apikey: key, Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: mode, topic: "Personal document assistant", notes: aiText, courseTitle: "Personal document assistant" }),
+        body: JSON.stringify({ kind: mode, topic: "Personal document assistant", sourceText: aiText, sourceName: "Pasted document text" }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || payload?.message || "AI request failed.");
