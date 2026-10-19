@@ -169,8 +169,13 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
         ...(fileBase64 ? { fileBase64, mimeType } : {}),
       });
       setResult(response);
-      const saved = await loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10");
-      setArtifacts(saved);
+      setResultRevision(value => value + 1);
+      try {
+        const saved = await loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10");
+        setArtifacts(saved);
+      } catch (historyError) {
+        console.error("Material generated, but history refresh failed", historyError);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not generate study material.");
     } finally {
