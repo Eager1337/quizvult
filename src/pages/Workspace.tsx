@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import ReadAloudExplainer from "@/components/ReadAloudExplainer";
-import { getSession, isSupabaseConfigured, signIn, signOut, signUp, type SupabaseSession } from "@/lib/supabase";
+import { challengeTotpFactor, enrollTotpFactor, getSession, isSupabaseConfigured, listMfaFactors, signIn, signOut, signUp, verifyTotpFactor, type SupabaseSession } from "@/lib/supabase";
 
 type WorkspaceKind = "task" | "project" | "journey" | "trip" | "note";
 type WorkspaceItem = { id: string; user_id?: string; kind: WorkspaceKind; title: string; content: Record<string, unknown>; created_at: string; updated_at?: string };
@@ -26,6 +26,11 @@ const Workspace = () => {
   const [session, setSession] = useState<SupabaseSession | null>(() => getSession());
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [authStep, setAuthStep] = useState<"none" | "enroll" | "verify">("none");
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaQrCode, setMfaQrCode] = useState("");
+  const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [profileType, setProfileType] = useState("Personal");
   const [tab, setTab] = useState<Tab>("overview");
@@ -192,16 +197,70 @@ const Workspace = () => {
   const visibleItems = tab === "tasks" ? items.filter(i => i.kind === "task") : tab === "projects" ? items.filter(i => i.kind === "project") : tab === "journey" ? items.filter(i => i.kind === "journey") : tab === "travel" ? items.filter(i => i.kind === "trip") : [];
 
   const doAuth = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    event.preventDefault(); setBusy(true); setError(""); setNotice(""); setMfaCode("");
     try {
-      if (!isSupabaseConfigured) throw new Error("Account access needs VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in the deployment environment.");
+      if (!isSupabaseConfigured) throw new Error("Supabase account access is not configured.");
       if (authMode === "signup") await signUp(email, password); else await signIn(email, password);
       const next = getSession(); setSession(next);
-      if (!next) setNotice("Check your email for a confirmation link, then sign in.");
-      else { setNotice("Welcome to your workspace."); await refreshWorkspace(next); }
+      if (!next) {
+        setNotice("Account request received, but email confirmation is still enabled in Supabase. Turn off Confirm email in Authentication settings before authenticator setup can start.");
+        return;
+      }
+      const factors = await listMfaFactors();
+      const verifiedTotp = (factors.totp || []).find(factor => factor.status === "verified");
+      if (authMode === "signin" && verifiedTotp) {
+        setMfaFactorId(verifiedTotp.id);
+        setAuthStep("verify");
+        setNotice("Enter the current six-digit code from your authenticator app.");
+      } else {
+        const enrollment = await enrollTotpFactor();
+        setMfaFactorId(enrollment.id);
+        setMfaQrCode(enrollment.totp.qr_code);
+        setMfaSecret(enrollment.totp.secret);
+        setAuthStep("enroll");
+        setNotice("Scan this QR code in your authenticator app, then enter its six-digit code.");
+      }
     } catch (e) { setError(e instanceof Error ? e.message : "Authentication failed."); }
     finally { setBusy(false); }
   };
+
+  const submitMfaCode = async (event: FormEvent) => {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      if (!mfaFactorId) throw new Error("Authenticator setup expired. Please sign in again.");
+      const challenge = await challengeTotpFactor(mfaFactorId);
+      await verifyTotpFactor(mfaFactorId, challenge.id, mfaCode.trim());
+      const next = getSession();
+      setSession(next);
+      setAuthStep("none");
+      setMfaCode("");
+      setNotice(authStep === "enroll" ? "Authenticator app successfully linked to your QuizVault account." : "Authenticator code verified. Welcome back.");
+      if (next) await refreshWorkspace(next);
+    } catch (e) { setError(e instanceof Error ? e.message : "That authenticator code could not be verified. Check the current six-digit code and try again."); }
+    finally { setBusy(false); }
+  };
+
+  if (session && authStep !== "none") {
+    return <div className="min-h-screen bg-background"><Header /><main className="container mx-auto flex max-w-xl flex-col justify-center px-4 py-12">
+      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><LockKeyhole className="h-6 w-6" /></div>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">QuizVault security</p>
+        <h1 className="mt-2 font-display text-2xl font-bold">{authStep === "enroll" ? "Connect your authenticator app" : "Two-step verification"}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{authStep === "enroll" ? "Scan this QR code using Google Authenticator, Microsoft Authenticator, 1Password, or another authenticator app. Then enter the current six-digit code below." : "Open your authenticator app and enter the current six-digit QuizVault code to continue."}</p>
+        {authStep === "enroll" && mfaQrCode && <div className="my-5 flex flex-col items-center gap-3 rounded-xl border border-border bg-white p-4">
+          <img src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(mfaQrCode)}`} alt="QuizVault authenticator enrollment QR code" className="h-52 w-52 max-w-full" />
+          <p className="text-center text-xs text-slate-600">Can't scan it? Add this setup key manually:</p>
+          <code className="select-all break-all text-center text-sm text-slate-900">{mfaSecret}</code>
+        </div>}
+        <form onSubmit={submitMfaCode} className="mt-5 grid gap-3">
+          <label className="text-sm font-semibold" htmlFor="quizvault-mfa-code">Six-digit authenticator code</label>
+          <input id="quizvault-mfa-code" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" />
+          <button disabled={busy || mfaCode.length !== 6} className="h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : authStep === "enroll" ? "Verify and enable authenticator" : "Verify and continue"}</button>
+        </form>
+        <button onClick={() => { signOut(); setSession(null); setAuthStep("none"); setMfaFactorId(""); setMfaQrCode(""); setMfaSecret(""); setMfaCode(""); }} className="mt-4 w-full text-sm font-semibold text-primary">Cancel and sign out</button>
+      </section>
+    </main></div>;
+  }
 
   return <div className="min-h-screen bg-background"><Header />
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
