@@ -120,7 +120,7 @@ const CoursePage = () => {
                   </select>
                 </label>
               </div>
-              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> {difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30} questions · {examMode === "timed" ? `${examMinutes} minute time limit` : "No time limit"}</p>
+              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> {Math.min(difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30, course.questions.filter(q => difficulty === "Beginner" ? (q.difficulty === "Beginner" || !q.difficulty) : difficulty === "Intermediate" ? q.difficulty !== "Advanced" : true).length || course.questions.length)} questions · {examMode === "timed" ? `${examMinutes} minute time limit` : "No time limit"}</p>
             </div>
             <h2 className="mb-5 font-display text-xl font-bold text-foreground">{examMode === "timed" ? "Timed exam" : "Practice quiz"}: {course.title}</h2>
             <QuizView key={`${course.id}-${difficulty}-${examMode}-${examMinutes}`} questions={course.questions} courseTitle={course.title} courseId={course.id} difficulty={difficulty} mode={examMode} examMinutes={examMinutes} />
