@@ -65,12 +65,25 @@ alter table public.quiz_attempts enable row level security;
 alter table public.question_bookmarks enable row level security;
 alter table public.ai_study_artifacts enable row level security;
 
+drop policy if exists "Users manage their own profile" on public.profiles;
 create policy "Users manage their own profile" on public.profiles for all using (auth.uid() = id) with check (auth.uid() = id);
+drop policy if exists "Users manage their saved courses" on public.saved_courses;
 create policy "Users manage their saved courses" on public.saved_courses for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users manage their lesson progress" on public.lesson_progress;
 create policy "Users manage their lesson progress" on public.lesson_progress for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users manage their quiz attempts" on public.quiz_attempts;
 create policy "Users manage their quiz attempts" on public.quiz_attempts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users manage their question bookmarks" on public.question_bookmarks;
 create policy "Users manage their question bookmarks" on public.question_bookmarks for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "Users manage their AI study artifacts" on public.ai_study_artifacts;
 create policy "Users manage their AI study artifacts" on public.ai_study_artifacts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+grant select, insert, update, delete on public.profiles, public.saved_courses, public.lesson_progress, public.quiz_attempts, public.question_bookmarks, public.ai_study_artifacts to authenticated;
+
+create index if not exists quiz_attempts_user_course_completed_idx
+  on public.quiz_attempts (user_id, course_id, completed_at desc);
+create index if not exists ai_study_artifacts_user_created_idx
+  on public.ai_study_artifacts (user_id, created_at desc);
 
 create or replace function public.create_profile_for_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
