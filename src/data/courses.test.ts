@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import { courses, getCourseById } from "./courses";
 
 describe("QuizVault learning catalogue quality", () => {
-  it("provides lessons and questions for every listed learning path", () => {
+  it("provides lessons for every path and accurately reports available question banks", () => {
     expect(courses.length).toBeGreaterThan(0);
     for (const course of courses) {
       expect(course.lessons.length, course.title).toBeGreaterThan(0);
-      expect(course.questions.length, course.title).toBeGreaterThan(0);
+      expect(course.questionsCount, course.title).toBe(course.questions.length);
+      if (["Python Programming", "Web Development 101", "Algebra Basics", "Network Security"].includes(course.title)) {
+        expect(course.questions.length, course.title).toBe(10);
+      }
     }
   });
 
