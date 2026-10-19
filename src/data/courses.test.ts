@@ -49,6 +49,22 @@ describe("QuizVault learning catalogue quality", () => {
     expect(course!.questions.some(question => question.difficulty === "Advanced")).toBe(true);
   });
 
+  it("provides worked algebra examples and a leveled network-security path", () => {
+    const algebra = getCourseById("algebra-basics");
+    const network = getCourseById("network-security");
+    expect(algebra).toBeDefined();
+    expect(network).toBeDefined();
+    expect(algebra!.lessons).toHaveLength(5);
+    expect(algebra!.lessons[1].content).toContain("4x = 24");
+    expect(algebra!.lessons[2].content).toContain("reverse the inequality sign");
+    expect(algebra!.questions).toHaveLength(10);
+    expect(network!.lessons).toHaveLength(5);
+    expect(network!.lessons[0].content).toContain("confidentiality");
+    expect(network!.lessons[3].content).toContain("Preserve relevant logs");
+    expect(network!.questions).toHaveLength(10);
+    expect(network!.questions.every(question => question.difficulty)).toBe(true);
+  });
+
   it("does not pad course quizzes with generic study-advice questions", () => {
     for (const course of courses) {
       expect(course.questions.some(question => /primary goal of mastering|what is the best method to retain knowledge/i.test(question.question))).toBe(false);
