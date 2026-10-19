@@ -1,0 +1,57 @@
+import { describe, expect, it } from "vitest";
+import { courses, getCourseById } from "./courses";
+
+describe("QuizVault learning catalogue quality", () => {
+  it("provides lessons and questions for every listed learning path", () => {
+    expect(courses.length).toBeGreaterThan(0);
+    for (const course of courses) {
+      expect(course.lessons.length, course.title).toBeGreaterThan(0);
+      expect(course.questions.length, course.title).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps every question structurally valid", () => {
+    for (const course of courses) {
+      for (const question of course.questions) {
+        expect(question.question.trim()).not.toBe("");
+        expect(question.explanation.trim()).not.toBe("");
+        expect(question.options).toHaveLength(4);
+        expect(new Set(question.options.map(option => option.trim().toLowerCase())).size).toBe(4);
+        expect(Number.isInteger(question.correctIndex)).toBe(true);
+        expect(question.correctIndex).toBeGreaterThanOrEqual(0);
+        expect(question.correctIndex).toBeLessThan(question.options.length);
+      }
+    }
+  });
+
+  it("uses a real, sequenced Python introduction rather than generic lesson filler", () => {
+    const course = getCourseById("python-programming");
+    expect(course).toBeDefined();
+    expect(course!.lessons).toHaveLength(5);
+    expect(course!.lessons[0].content).toContain("print(f");
+    expect(course!.lessons[1].content).toContain("ValueError");
+    expect(course!.lessons[2].content).toContain("elif");
+    expect(course!.lessons[3].content).toContain("for price in prices");
+    expect(course!.lessons[4].content).toContain("assert");
+    expect(course!.questions).toHaveLength(10);
+    expect(course!.questions.every(question => question.difficulty)).toBe(true);
+  });
+
+  it("provides practical web-development lessons and a leveled question bank", () => {
+    const course = getCourseById("web-development-101");
+    expect(course).toBeDefined();
+    expect(course!.lessons).toHaveLength(5);
+    expect(course!.lessons[1].content).toContain("label for");
+    expect(course!.lessons[2].content).toContain("grid-template-columns");
+    expect(course!.lessons[3].content).toContain("textContent");
+    expect(course!.lessons[4].content).toContain("response.ok");
+    expect(course!.questions).toHaveLength(10);
+    expect(course!.questions.some(question => question.difficulty === "Advanced")).toBe(true);
+  });
+
+  it("does not pad course quizzes with generic study-advice questions", () => {
+    for (const course of courses) {
+      expect(course.questions.some(question => /primary goal of mastering|what is the best method to retain knowledge/i.test(question.question))).toBe(false);
+    }
+  });
+});
