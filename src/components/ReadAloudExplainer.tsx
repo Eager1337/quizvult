@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, MicOff, Pause, Play, Radio, Square, Volume2, VolumeX } from "lucide-react";
 
-type SpeechResultEvent = Event & { results: ArrayLike<ArrayLike<{ transcript: string }>> };
+type SpeechResultEvent = Event & { results: ArrayLike<ArrayLike<{ transcript: string }>>; resultIndex?: number };
 type SpeechRecognitionLike = {
   lang: string; interimResults: boolean; continuous: boolean;
   onresult: ((event: SpeechResultEvent) => void) | null;
@@ -69,9 +69,8 @@ const ReadAloudExplainer = ({ text, onTranscript, title = "Listen and explore" }
     recognition.interimResults = false;
     recognition.continuous = true;
     recognition.onresult = event => {
-      const transcripts: string[] = [];
-      for (let i = 0; i < event.results.length; i++) transcripts.push(event.results[i][0].transcript);
-      if (transcripts.length) onTranscript?.(transcripts.join(" "));
+      const last = event.results.length - 1;
+      if (last >= 0) onTranscript?.(event.results[last][0].transcript);
     };
     recognition.onerror = () => setDictating(false);
     recognition.onend = () => setDictating(false);
