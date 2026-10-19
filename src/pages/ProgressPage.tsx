@@ -61,7 +61,7 @@ const ProgressPage = () => {
       course,
       completed: Math.min(completed, course.lessons.length),
       progress: Math.round((Math.min(completed, course.lessons.length) / Math.max(1, course.lessons.length)) * 100),
-      attempts: courseAttempts.length || local.attempts,
+      attempts: Math.max(courseAttempts.length, local.attempts),
       bestScore: Math.max(local.bestScore, remoteBest),
       lastAttempt: courseAttempts[0]?.completed_at || local.completedAt,
     };
