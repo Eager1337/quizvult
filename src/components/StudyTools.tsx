@@ -10,6 +10,75 @@ const toolOptions: { id: ToolKind; label: string; icon: typeof Brain }[] = [
   { id: "summary", label: "Summarize notes", icon: FileText },
 ];
 
+type AIQuestion = { question: string; options: string[]; correctIndex: number; explanation?: string };
+type AICard = { front: string; back: string };
+
+const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unknown }) => {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [flipped, setFlipped] = useState<Record<number, boolean>>({});
+  const data = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  const title = typeof data.title === "string" ? data.title : "Study material";
+  const questions = Array.isArray(data.questions) ? data.questions.filter((item): item is AIQuestion =>
+    Boolean(item && typeof item === "object" && typeof (item as AIQuestion).question === "string" &&
+      Array.isArray((item as AIQuestion).options) && Number.isInteger((item as AIQuestion).correctIndex) &&
+      (item as AIQuestion).correctIndex >= 0 && (item as AIQuestion).correctIndex < (item as AIQuestion).options.length)
+  ) : [];
+  const cards = Array.isArray(data.cards) ? data.cards.filter((item): item is AICard =>
+    Boolean(item && typeof item === "object" && typeof (item as AICard).front === "string" && typeof (item as AICard).back === "string")
+  ) : [];
+  const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  const score = questions.reduce((sum, question, index) => sum + (answers[index] === question.correctIndex ? 1 : 0), 0);
+
+  if (kind === "quiz" && questions.length) return <div className="mt-5 space-y-5">
+    <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
+    <p className="text-xs text-muted-foreground">AI-generated practice quiz · Check the explanations and verify important facts with your source material.</p>
+    {questions.map((question, index) => <article key={index} className="rounded-xl border border-border p-4">
+      <p className="font-semibold text-foreground">{index + 1}. {question.question}</p>
+      <div className="mt-3 space-y-2">
+        {question.options.map((option, optionIndex) => {
+          const isCorrect = submitted && optionIndex === question.correctIndex;
+          const isWrongChoice = submitted && answers[index] === optionIndex && optionIndex !== question.correctIndex;
+          return <button key={optionIndex} type="button" disabled={submitted} onClick={() => setAnswers(previous => ({ ...previous, [index]: optionIndex }))} className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm ${isCorrect ? "border-emerald-500 bg-emerald-500/10" : isWrongChoice ? "border-destructive bg-destructive/10" : answers[index] === optionIndex ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"}`}>
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs">{String.fromCharCode(65 + optionIndex)}</span>{option}
+          </button>;
+        })}
+      </div>
+      {submitted && <p className="mt-3 text-sm text-muted-foreground"><strong>Explanation:</strong> {question.explanation || "Review this answer against your notes."}</p>}
+    </article>)}
+    {!submitted ? <button type="button" onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length !== questions.length} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40">Submit answers</button> : <div className="rounded-xl bg-primary/10 p-4"><p className="font-display text-2xl font-bold text-primary">{score} / {questions.length} correct</p><button type="button" onClick={() => { setAnswers({}); setSubmitted(false); }} className="mt-3 text-sm font-semibold text-primary hover:underline">Try again</button></div>}
+  </div>;
+
+  if (kind === "flashcards" && cards.length) return <div className="mt-5 space-y-4">
+    <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
+    <p className="text-xs text-muted-foreground">AI-generated flashcards · Select a card to reveal or hide the answer.</p>
+    <div className="grid gap-3 sm:grid-cols-2">
+      {cards.map((card, index) => <button key={index} type="button" onClick={() => setFlipped(previous => ({ ...previous, [index]: !previous[index] }))} className="min-h-32 rounded-xl border border-border bg-background p-4 text-left hover:border-primary/50">
+        <span className="text-xs font-bold uppercase tracking-wide text-primary">{flipped[index] ? "Answer" : `Card ${index + 1} · Question`}</span>
+        <span className="mt-2 block text-sm leading-relaxed text-foreground">{flipped[index] ? card.back : card.front}</span>
+        <span className="mt-3 block text-xs text-muted-foreground">{flipped[index] ? "Click to see question" : "Click to reveal answer"}</span>
+      </button>)}
+    </div>
+  </div>;
+
+  const keyPoints = strings(data.keyPoints);
+  const limitations = strings(data.limitations);
+  const terms = Array.isArray(data.terms) ? data.terms.filter((item): item is { term: string; definition: string } =>
+    Boolean(item && typeof item === "object" && typeof (item as {term?: unknown}).term === "string" && typeof (item as {definition?: unknown}).definition === "string")
+  ) : [];
+  const bodyText = [data.summary, data.explanation].filter((item): item is string => typeof item === "string");
+  return <div className="mt-5 space-y-5">
+    <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
+    {bodyText.map((text, index) => <p key={index} className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>)}
+    {typeof data.example === "string" && <section className="rounded-xl bg-muted p-4"><h4 className="font-semibold text-foreground">Example</h4><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{data.example}</p></section>}
+    {keyPoints.length > 0 && <section><h4 className="font-semibold text-foreground">Key points</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground">{keyPoints.map((point, index) => <li key={index}>{point}</li>)}</ul></section>}
+    {terms.length > 0 && <section><h4 className="font-semibold text-foreground">Key terms</h4><dl className="mt-2 space-y-3">{terms.map((term, index) => <div key={index}><dt className="text-sm font-semibold text-foreground">{term.term}</dt><dd className="mt-1 text-sm text-muted-foreground">{term.definition}</dd></div>)}</dl></section>}
+    {limitations.length > 0 && <section><h4 className="font-semibold text-foreground">Limitations and caveats</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground">{limitations.map((item, index) => <li key={index}>{item}</li>)}</ul></section>}
+    {typeof data.sourceNotes === "string" && <p className="rounded-lg border border-border p-3 text-xs text-muted-foreground">Source notes: {data.sourceNotes}</p>}
+    {!bodyText.length && !keyPoints.length && !terms.length && !cards.length && !questions.length && <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-4 text-sm text-foreground">{JSON.stringify(payload, null, 2)}</pre>}
+  </div>;
+};
+
 const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -186,7 +255,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
       {result !== null && <div className="rounded-2xl border border-border bg-card p-5 md:p-7">
         <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Sparkles className="h-4 w-4" /> AI-generated content · Review for accuracy</div>
         <p className="mt-1 text-xs text-muted-foreground">Created from your supplied material. Check important facts against your course sources.</p>
-        <pre className="mt-4 max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-4 text-sm text-foreground">{JSON.stringify(result, null, 2)}</pre>
+        <GeneratedContentView kind={kind} payload={(result as { result?: unknown }).result ?? result} />
       </div>}
     </section>
   );
