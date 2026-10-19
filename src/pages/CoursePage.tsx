@@ -33,13 +33,27 @@ const CoursePage = () => {
           loadLearningRecords<{ lesson_index: number }>("lesson_progress", `select=lesson_index&course_id=eq.${encodeURIComponent(course.id)}`),
           loadLearningRecords<{ course_id: string }>("saved_courses", `select=course_id&course_id=eq.${encodeURIComponent(course.id)}`),
         ]).then(([remoteLessons, remoteSaved]) => {
-          const mergedLessons = [...new Set([...localCompleted, ...remoteLessons.map(item => item.lesson_index)])];
+          const remoteLessonIds = new Set(remoteLessons.map(item => item.lesson_index));
+          const mergedLessons = [...new Set([...localCompleted, ...remoteLessonIds])];
           setCompletedLessons(mergedLessons);
           localStorage.setItem(`quizvault.lessons.${course.id}`, JSON.stringify(mergedLessons));
-          if (remoteSaved.length && !saved.includes(course.id)) {
+          // Backfill work completed while offline into the signed-in user's cloud record.
+          for (const lessonIndex of localCompleted) {
+            if (!remoteLessonIds.has(lessonIndex)) {
+              void saveLearningRecord("rest/v1/lesson_progress", {
+                user_id: session.user.id, course_id: course.id, lesson_index: lessonIndex,
+              }).catch(error => console.error("Could not backfill lesson progress", error));
+            }
+          }
+          const remoteHasCourse = remoteSaved.length > 0;
+          if (remoteHasCourse && !saved.includes(course.id)) {
             const mergedSaved = [...new Set([...saved, course.id])];
             localStorage.setItem("quizvault.savedCourses", JSON.stringify(mergedSaved));
             setSavedCourse(true);
+          } else if (!remoteHasCourse && saved.includes(course.id)) {
+            void saveLearningRecord("rest/v1/saved_courses", {
+              user_id: session.user.id, course_id: course.id,
+            }).catch(error => console.error("Could not backfill saved course", error));
           }
         }).catch(error => console.error("Could not load synced learning progress", error));
       }
