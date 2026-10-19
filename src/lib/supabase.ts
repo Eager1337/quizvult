@@ -128,3 +128,40 @@ export async function invokeStudyAssistant(payload: Record<string, unknown>) {
 export function localProgressKey(courseId: string) {
   return `quizvault.progress.${courseId}`;
 }
+
+
+export type SupabaseTotpFactor = { id: string; status: string; friendly_name?: string };
+export type SupabaseTotpEnrollment = { id: string; totp: { qr_code: string; secret: string; uri: string } };
+
+export async function listMfaFactors() {
+  return request<{ all?: SupabaseTotpFactor[]; totp?: SupabaseTotpFactor[]; phone?: unknown[] }>("auth/v1/factors", {}, true);
+}
+
+export async function enrollTotpFactor() {
+  return request<SupabaseTotpEnrollment>("auth/v1/factors", {
+    method: "POST",
+    body: JSON.stringify({ factor_type: "totp", friendly_name: "QuizVault authenticator" }),
+  }, true);
+}
+
+export async function challengeTotpFactor(factorId: string) {
+  return request<{ id: string }>(`auth/v1/factors/${encodeURIComponent(factorId)}/challenge`, { method: "POST", body: JSON.stringify({}) }, true);
+}
+
+export async function verifyTotpFactor(factorId: string, challengeId: string, code: string) {
+  const result = await request<{ access_token?: string; refresh_token?: string; expires_in?: number; user?: SupabaseSession["user"] }>(
+    `auth/v1/factors/${encodeURIComponent(factorId)}/verify`,
+    { method: "POST", body: JSON.stringify({ challenge_id: challengeId, code }) },
+    true,
+  );
+  if (result.access_token && result.user) {
+    saveSession({
+      access_token: result.access_token,
+      refresh_token: result.refresh_token,
+      expires_at: Math.floor(Date.now() / 1000) + (result.expires_in || 3600),
+      user: result.user,
+    });
+    notifyAuthChanged();
+  }
+  return result;
+}
