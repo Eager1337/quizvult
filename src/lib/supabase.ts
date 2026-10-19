@@ -31,6 +31,10 @@ function saveSession(session: SupabaseSession | null) {
   else localStorage.removeItem(SESSION_KEY);
 }
 
+function notifyAuthChanged() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("quizvault:auth-changed"));
+}
+
 async function request<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
   if (!isSupabaseConfigured) throw new Error("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
   let session = authenticated ? getSession() : null;
@@ -66,7 +70,7 @@ export async function signUp(email: string, password: string) {
     { method: "POST", body: JSON.stringify({ email, password }) },
   );
   if (result.access_token) {
-    saveSession({ ...result, access_token: result.access_token, user: result.user, expires_at: Math.floor(Date.now() / 1000) + (result.expires_in || 3600) });
+    saveSession({ ...result, access_token: result.access_token, user: result.user, expires_at: Math.floor(Date.now() / 1000) + (result.expires_in || 3600) });\n    notifyAuthChanged();
   }
   return result.user;
 }
