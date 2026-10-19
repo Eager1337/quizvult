@@ -21,7 +21,10 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
   const title = typeof data.title === "string" ? data.title : "Study material";
   const questions = Array.isArray(data.questions) ? data.questions.filter((item): item is AIQuestion =>
     Boolean(item && typeof item === "object" && typeof (item as AIQuestion).question === "string" &&
-      Array.isArray((item as AIQuestion).options) && Number.isInteger((item as AIQuestion).correctIndex) &&
+      Array.isArray((item as AIQuestion).options) && (item as AIQuestion).options.length === 4 &&
+      (item as AIQuestion).options.every(option => typeof option === "string" && option.trim()) &&
+      new Set((item as AIQuestion).options.map(option => option.trim().toLowerCase())).size === 4 &&
+      Number.isInteger((item as AIQuestion).correctIndex) &&
       (item as AIQuestion).correctIndex >= 0 && (item as AIQuestion).correctIndex < (item as AIQuestion).options.length)
   ) : [];
   const cards = Array.isArray(data.cards) ? data.cards.filter((item): item is AICard =>
@@ -62,7 +65,7 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
   </div>;
 
   const keyPoints = strings(data.keyPoints);
-  const limitations = strings(data.limitations);
+  const limitations = typeof data.limitations === "string" ? [data.limitations] : strings(data.limitations);
   const terms = Array.isArray(data.terms) ? data.terms.filter((item): item is { term: string; definition: string } =>
     Boolean(item && typeof item === "object" && typeof (item as {term?: unknown}).term === "string" && typeof (item as {definition?: unknown}).definition === "string")
   ) : [];
@@ -88,7 +91,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
   const [topic, setTopic] = useState(courseTitle);
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<unknown>(null);\n  const [resultRevision, setResultRevision] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);\n  const [artifacts, setArtifacts] = useState<SavedArtifact[]>([]);\n  const [historyLoading, setHistoryLoading] = useState(false);
 
@@ -246,7 +249,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
         <div className="flex items-center justify-between gap-3"><div><h3 className="font-display text-lg font-bold text-foreground">Recent study materials</h3><p className="mt-1 text-xs text-muted-foreground">Your latest AI-generated materials saved to your account.</p></div>{historyLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}</div>
         {!historyLoading && artifacts.length === 0 && <p className="mt-4 text-sm text-muted-foreground">Your generated summaries, quizzes, explanations, and flashcards will appear here.</p>}
         <div className="mt-4 space-y-2">
-          {artifacts.map(artifact => <button key={artifact.id} type="button" onClick={() => { setTopic(artifact.title); setKind(artifact.artifact_type); setResult({ result: artifact.generated_content, generated: true, label: "AI-generated — review for accuracy" }); }} className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left hover:border-primary/50">
+          {artifacts.map(artifact => <button key={artifact.id} type="button" onClick={() => { setTopic(artifact.title); setKind(artifact.artifact_type); setResult({ result: artifact.generated_content, generated: true, label: "AI-generated — review for accuracy" }); setResultRevision(value => value + 1); }} className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left hover:border-primary/50">
             <span className="min-w-0"><span className="block truncate text-sm font-semibold text-foreground">{artifact.title}</span><span className="mt-1 block text-xs capitalize text-muted-foreground">{artifact.artifact_type} · {new Date(artifact.created_at).toLocaleDateString()}</span></span><span className="shrink-0 text-xs font-semibold text-primary">Open</span>
           </button>)}
         </div>
@@ -255,7 +258,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
       {result !== null && <div className="rounded-2xl border border-border bg-card p-5 md:p-7">
         <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Sparkles className="h-4 w-4" /> AI-generated content · Review for accuracy</div>
         <p className="mt-1 text-xs text-muted-foreground">Created from your supplied material. Check important facts against your course sources.</p>
-        <GeneratedContentView kind={kind} payload={(result as { result?: unknown }).result ?? result} />
+        <GeneratedContentView key={resultRevision} kind={kind} payload={(result as { result?: unknown }).result ?? result} />
       </div>}
     </section>
   );
