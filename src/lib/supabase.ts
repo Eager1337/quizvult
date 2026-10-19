@@ -33,7 +33,19 @@ function saveSession(session: SupabaseSession | null) {
 
 async function request<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
   if (!isSupabaseConfigured) throw new Error("Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
-  const session = authenticated ? getSession() : null;
+  let session = authenticated ? getSession() : null;
+  if (authenticated && session?.refresh_token && session.expires_at && session.expires_at * 1000 < Date.now() + 60_000) {
+    try {
+      const refreshed = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST", headers: { apikey: SUPABASE_ANON_KEY!, "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+      });
+      if (!refreshed.ok) throw new Error("Session refresh failed");
+      const next = await refreshed.json() as { access_token: string; refresh_token: string; expires_in: number; user: SupabaseSession["user"] };
+      session = { ...next, expires_at: Math.floor(Date.now() / 1000) + next.expires_in };
+      saveSession(session);
+    } catch { saveSession(null); session = null; }
+  }
   const response = await fetch(`${SUPABASE_URL}/${path.replace(/^\//, "")}`, {
     ...init,
     headers: {
