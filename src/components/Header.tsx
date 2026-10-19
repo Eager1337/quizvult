@@ -27,7 +27,7 @@ const Header = () => {
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search 500+ courses..."
+            placeholder="Search learning paths..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
