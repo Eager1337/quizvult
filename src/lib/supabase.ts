@@ -103,6 +103,13 @@ export async function loadLearningRecords<T>(table: string, query = "select=*") 
   return request<T[]>(`rest/v1/${table}?${query}`, {}, true);
 }
 
+export async function deleteLearningRecord(table: string, query: string) {
+  return request(`rest/v1/${table}?${query}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=minimal" },
+  }, true);
+}
+
 export async function invokeStudyAssistant(payload: Record<string, unknown>) {
   return request<{ result: unknown; generated: true }>(
     "functions/v1/study-assistant",
