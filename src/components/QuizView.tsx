@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Question } from "@/data/courses";
 import { deleteLearningRecord, getSession, loadLearningRecords, localProgressKey, saveLearningRecord } from "@/lib/supabase";
 import { CheckCircle2, XCircle, ArrowRight, RotateCcw, Trophy, Bookmark, Clock3, AlertTriangle } from "lucide-react";
@@ -52,6 +52,7 @@ const QuizView = ({
 }) => {
   const questionLimit = difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30;
   const [runId, setRunId] = useState(0);
+  const savedRunRef = useRef<number | null>(null);
   const quizQuestions = useMemo(() => {
     const eligible = questions.filter(question => {
       if (!question.difficulty) return true;
@@ -137,7 +138,7 @@ const QuizView = ({
         duration_seconds: mode === "timed" ? Math.max(0, examMinutes * 60 - remainingSeconds) : null,
       }).catch(error => console.error("Could not save quiz attempt", error));
     }
-  }, [finished, answers, courseId, difficulty, examMinutes, mode, quizQuestions, remainingSeconds]);
+  }, [finished, answers, courseId, difficulty, examMinutes, mode, quizQuestions, remainingSeconds, runId]);
 
   const handleSelect = (index: number) => {
     if (answered || !q) return;
