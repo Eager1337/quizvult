@@ -20,6 +20,9 @@ const getBookmarks = (courseId: string): Question[] => {
   catch { return []; }
 };
 
+const questionHash = (question: string) =>
+  btoa(unescape(encodeURIComponent(question))).replace(/[^a-zA-Z0-9]/g, "").slice(0, 60);
+
 const QuizView = ({
   questions,
   courseTitle,
@@ -58,11 +61,24 @@ const QuizView = ({
   useEffect(() => {
     const session = getSession();
     if (!session) return;
-    void loadLearningRecords<{ question_data: Question }>("question_bookmarks", `select=question_data&course_id=eq.${encodeURIComponent(courseId)}`)
+    void loadLearningRecords<{ question_data: Question }>("question_bookmarks", `select=question_hash,question_data&course_id=eq.${encodeURIComponent(courseId)}`)
       .then(records => {
-        const merged = [...new Map([...getBookmarks(courseId), ...records.map(record => record.question_data)].map(item => [item.question, item])).values()];
+        const local = getBookmarks(courseId);
+        const remoteQuestions = new Set(records.map(record => record.question_data.question));
+        const merged = [...new Map([...local, ...records.map(record => record.question_data)].map(item => [item.question, item])).values()];
         setBookmarks(merged);
         localStorage.setItem(`quizvault.bookmarks.${courseId}`, JSON.stringify(merged));
+        const session = getSession();
+        if (session) {
+          for (const question of local) {
+            if (!remoteQuestions.has(question.question)) {
+              void saveLearningRecord("rest/v1/question_bookmarks", {
+                user_id: session.user.id, course_id: courseId, question_hash: questionHash(question.question),
+                question_text: question.question, question_data: question,
+              }).catch(error => console.error("Could not backfill question bookmark", error));
+            }
+          }
+        }
       })
       .catch(error => console.error("Could not load synced bookmarks", error));
   }, [courseId]);
@@ -135,14 +151,14 @@ const QuizView = ({
     localStorage.setItem(`quizvault.bookmarks.${courseId}`, JSON.stringify(next));
     const session = getSession();
     if (session) {
-      const questionHash = btoa(unescape(encodeURIComponent(q.question))).replace(/[^a-zA-Z0-9]/g, "").slice(0, 60);
+      const hash = questionHash(q.question);
       if (!isBookmarked) {
         void saveLearningRecord("rest/v1/question_bookmarks", {
-          user_id: session.user.id, course_id: courseId, question_hash: questionHash,
+          user_id: session.user.id, course_id: courseId, question_hash: hash,
           question_text: q.question, question_data: q,
         }).catch(error => console.error("Could not sync bookmark", error));
       } else {
-        void deleteLearningRecord("question_bookmarks", `course_id=eq.${encodeURIComponent(courseId)}&question_hash=eq.${encodeURIComponent(questionHash)}`)
+        void deleteLearningRecord("question_bookmarks", `course_id=eq.${encodeURIComponent(courseId)}&question_hash=eq.${encodeURIComponent(hash)}`)
           .catch(error => console.error("Could not remove synced bookmark", error));
       }
     }
