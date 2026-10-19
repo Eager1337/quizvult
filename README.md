@@ -35,7 +35,7 @@ supabase functions deploy study-assistant
 
 ## Current learning features
 
-- Subject-aware lesson scaffolds with worked examples, practice prompts, and further-reading guidance.
+- Hand-authored, sequenced lessons and leveled question banks for Python Programming, Web Development 101, Algebra Basics, and Network Security; other catalogue entries currently use category-level teaching scaffolds with practice prompts and further-reading guidance.
 - Randomized practice and timed exams, difficulty-based question pools, incorrect-answer review, and question bookmarks.
 - Local-device progress that works offline; signed-in lesson completions, saved courses, bookmarks, and quiz attempts sync to Supabase.
 - AI-generated quizzes, explanations, summaries, and flashcards from pasted notes or PDF/TXT/Markdown uploads. AI output is labelled and should be reviewed for accuracy.
@@ -46,4 +46,4 @@ supabase functions deploy study-assistant
 - No course is represented as accredited or certification-ready.
 - Ethical hacking material is for authorized labs and defensive learning only.
 - Trading material is educational and does not guarantee returns.
-- Before production launch, run the build, lint, and tests; review the question banks with subject-matter experts; and test authentication, RLS, and Edge Function deployment in the actual Supabase project.
+- A GitHub Actions workflow runs the test suite, lint, and production build on pushes and pull requests to `main`. Confirm its run result before release. Review question banks with subject-matter experts and test authentication, RLS, and Edge Function deployment in the actual Supabase project.
