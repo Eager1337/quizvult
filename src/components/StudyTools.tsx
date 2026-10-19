@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { FileText, Sparkles, Upload, BookOpen, Brain, Layers, Loader2 } from "lucide-react";
 import { getSession, invokeStudyAssistant, isSupabaseConfigured, loadLearningRecords, signIn, signOut, signUp } from "@/lib/supabase";
 
-type ToolKind = "quiz" | "explanation" | "flashcards" | "summary";\ntype SavedArtifact = { id: string; title: string; artifact_type: ToolKind; created_at: string; generated_content: unknown };
+type ToolKind = "quiz" | "explanation" | "flashcards" | "summary";
+type SavedArtifact = { id: string; title: string; artifact_type: ToolKind; created_at: string; generated_content: unknown };
 const toolOptions: { id: ToolKind; label: string; icon: typeof Brain }[] = [
   { id: "quiz", label: "Generate quiz", icon: Brain },
   { id: "explanation", label: "Explain a topic", icon: BookOpen },
@@ -91,9 +92,12 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
   const [topic, setTopic] = useState(courseTitle);
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<unknown>(null);\n  const [resultRevision, setResultRevision] = useState(0);
+  const [result, setResult] = useState<unknown>(null);
+  const [resultRevision, setResultRevision] = useState(0);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);\n  const [artifacts, setArtifacts] = useState<SavedArtifact[]>([]);\n  const [historyLoading, setHistoryLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [artifacts, setArtifacts] = useState<SavedArtifact[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!userEmail || !getSession() || !isSupabaseConfigured) {
@@ -164,7 +168,9 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
         sourceName: file?.name || "Pasted notes",
         ...(fileBase64 ? { fileBase64, mimeType } : {}),
       });
-      setResult(response);\n      const saved = await loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10");\n      setArtifacts(saved);
+      setResult(response);
+      const saved = await loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10");
+      setArtifacts(saved);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not generate study material.");
     } finally {
