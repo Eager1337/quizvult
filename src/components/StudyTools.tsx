@@ -29,9 +29,11 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
     setLoading(true);
     try {
       const user = authMode === "signup" ? await signUp(email, password) : await signIn(email, password);
-      setUserEmail(user.email || email);
       if (authMode === "signup" && !getSession()) {
+        setUserEmail("");
         setError("Account created. Check your email to confirm it, then sign in to use AI study tools.");
+      } else {
+        setUserEmail(user.email || email);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Authentication failed.");
