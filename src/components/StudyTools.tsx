@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, Sparkles, Upload, BookOpen, Brain, Layers, Loader2 } from "lucide-react";
-import { getSession, invokeStudyAssistant, isSupabaseConfigured, signIn, signOut, signUp } from "@/lib/supabase";
+import { getSession, invokeStudyAssistant, isSupabaseConfigured, loadLearningRecords, signIn, signOut, signUp } from "@/lib/supabase";
 
-type ToolKind = "quiz" | "explanation" | "flashcards" | "summary";
+type ToolKind = "quiz" | "explanation" | "flashcards" | "summary";\ntype SavedArtifact = { id: string; title: string; artifact_type: ToolKind; created_at: string; generated_content: unknown };
 const toolOptions: { id: ToolKind; label: string; icon: typeof Brain }[] = [
   { id: "quiz", label: "Generate quiz", icon: Brain },
   { id: "explanation", label: "Explain a topic", icon: BookOpen },
@@ -21,7 +21,22 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<unknown>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);\n  const [artifacts, setArtifacts] = useState<SavedArtifact[]>([]);\n  const [historyLoading, setHistoryLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userEmail || !getSession() || !isSupabaseConfigured) {
+      setArtifacts([]);
+      return;
+    }
+    let active = true;
+    setHistoryLoading(true);
+    void loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10")
+      .then(items => { if (active) setArtifacts(items); })
+      .catch(loadError => console.error("Could not load saved study materials", loadError))
+      .finally(() => { if (active) setHistoryLoading(false); });
+    return () => { active = false; };
+  }, [userEmail]);
+
 
   const handleAuth = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -77,7 +92,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
         sourceName: file?.name || "Pasted notes",
         ...(fileBase64 ? { fileBase64, mimeType } : {}),
       });
-      setResult(response);
+      setResult(response);\n      const saved = await loadLearningRecords<SavedArtifact>("ai_study_artifacts", "select=id,title,artifact_type,created_at,generated_content&order=created_at.desc&limit=10");\n      setArtifacts(saved);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not generate study material.");
     } finally {
@@ -157,6 +172,16 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
           {loading ? "Creating study material…" : "Generate study material"}
         </button>
       </div>
+
+      {userEmail && <section className="rounded-2xl border border-border bg-card p-5 md:p-7">
+        <div className="flex items-center justify-between gap-3"><div><h3 className="font-display text-lg font-bold text-foreground">Recent study materials</h3><p className="mt-1 text-xs text-muted-foreground">Your latest AI-generated materials saved to your account.</p></div>{historyLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}</div>
+        {!historyLoading && artifacts.length === 0 && <p className="mt-4 text-sm text-muted-foreground">Your generated summaries, quizzes, explanations, and flashcards will appear here.</p>}
+        <div className="mt-4 space-y-2">
+          {artifacts.map(artifact => <button key={artifact.id} type="button" onClick={() => { setTopic(artifact.title); setKind(artifact.artifact_type); setResult({ result: artifact.generated_content, generated: true, label: "AI-generated — review for accuracy" }); }} className="flex w-full items-center justify-between gap-3 rounded-xl border border-border p-3 text-left hover:border-primary/50">
+            <span className="min-w-0"><span className="block truncate text-sm font-semibold text-foreground">{artifact.title}</span><span className="mt-1 block text-xs capitalize text-muted-foreground">{artifact.artifact_type} · {new Date(artifact.created_at).toLocaleDateString()}</span></span><span className="shrink-0 text-xs font-semibold text-primary">Open</span>
+          </button>)}
+        </div>
+      </section>}
 
       {result !== null && <div className="rounded-2xl border border-border bg-card p-5 md:p-7">
         <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Sparkles className="h-4 w-4" /> AI-generated content · Review for accuracy</div>
