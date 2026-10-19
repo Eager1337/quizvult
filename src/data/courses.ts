@@ -10,6 +10,7 @@ export type Question = {
   options: string[];
   correctIndex: number;
   explanation: string;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
 };
 
 export type Lesson = {
@@ -111,21 +112,33 @@ function generateLessons(courseTitle: string, categoryId: string): Lesson[] {
   }));
 }
 
-function generateLessonContent(courseTitle: string, topic: string, index: number, _categoryId: string): string {
-  const sections = [
-    `Welcome to this comprehensive lesson on ${topic} as it relates to ${courseTitle}. This is one of the most critical areas you need to master to become a certified expert.`,
-    `## Learning Objectives\n\n- Understand the core principles of ${topic}\n- Apply ${topic} concepts in real-world ${courseTitle} scenarios\n- Identify common mistakes and how to avoid them\n- Build practical skills through guided exercises\n- Connect ${topic} to broader concepts in ${courseTitle}`,
-    `## Deep Dive: ${topic}\n\nThis section covers the essential knowledge that separates beginners from experts. Every certified professional in ${courseTitle} must demonstrate mastery of ${topic}.\n\n${topic} is foundational because it underpins many advanced concepts you'll encounter later. Without a solid grasp here, more complex topics will be significantly harder to understand.`,
-    `## Key Concepts & Definitions\n\n- **Core Principle**: The fundamental rule governing ${topic} in the context of ${courseTitle}\n- **Application Framework**: How practitioners apply ${topic} in professional settings\n- **Common Patterns**: Recognizable patterns that experts identify quickly\n- **Edge Cases**: Unusual situations that require deeper understanding\n- **Best Practices**: Industry-standard approaches endorsed by professionals`,
-    `## Historical Context\n\nUnderstanding how ${topic} evolved within ${courseTitle} provides crucial context. The field has undergone significant changes, and knowing the historical progression helps you understand why current practices exist and where the field is headed.`,
-    `## Practical Application\n\nTheory without practice is incomplete. Here's how to apply ${topic} in real scenarios:\n\n- Start with simple examples and gradually increase complexity\n- Document your process and results for future reference\n- Seek feedback from experienced practitioners\n- Compare your approach with established methodologies\n- Iterate and improve based on outcomes`,
-    `## Common Mistakes to Avoid\n\n- Skipping foundational concepts and jumping to advanced material\n- Relying on memorization instead of understanding\n- Not practicing regularly with real-world scenarios\n- Ignoring feedback and not adjusting your approach\n- Underestimating the importance of ${topic} in the broader field`,
-    `## Expert Tips\n\n- Create mental models that connect ${topic} to other areas of ${courseTitle}\n- Teach what you've learned to solidify your understanding\n- Stay updated with the latest developments and research\n- Join professional communities focused on ${courseTitle}\n- Build a portfolio demonstrating your expertise in ${topic}`,
-    `## Self-Assessment\n\nBefore moving on, make sure you can:\n\n- Explain ${topic} clearly to someone unfamiliar with ${courseTitle}\n- Identify at least 3 real-world applications\n- Recognize common mistakes and explain why they're problematic\n- Connect ${topic} to at least 2 other lessons in this course\n- Apply the concepts in a practical exercise`,
-    `## Summary & Next Steps\n\nYou've now covered the essential aspects of ${topic} within ${courseTitle}. This knowledge forms a critical building block for the advanced lessons ahead. Review your notes, complete the practice exercises, and proceed to the next lesson when you feel confident in your understanding.`,
-  ];
-  
-  return sections.join('\n\n');
+function generateLessonContent(courseTitle: string, topic: string, index: number, categoryId: string): string {
+  const common = "## Learning goals\n\nBy the end of this lesson, explain " + topic + ", work through an example, and identify one limitation.\n\n## Core idea\n\n" + topic + " is part of " + courseTitle + ". Define key terms precisely, connect the idea to a concrete problem, and write down what evidence could change your conclusion.";
+
+  const teaching: Record<string, string> = {
+    technology: "## Worked example\n\nFor a programming topic, reduce the problem to a small reproducible example. Example in TypeScript:\n\nfunction addTax(price: number, rate: number): number { return price * (1 + rate); }\naddTax(100, 0.15) returns 115.\n\nTrace each input, the expression, and the output. Test normal values, edge cases, and invalid input.\n\n## Practice\n\nWrite a small example related to " + topic + ". Test one normal case, one edge case, and one invalid input. Explain what each test proves.\n\n## Common mistakes\n\n- Copying code without understanding inputs and outputs\n- Ignoring validation, errors, or security\n- Assuming one passing example proves correctness",
+    mathematics: "## Worked example\n\nSolve 2x + 3 = 11. Subtract 3 from both sides: 2x = 8. Divide by 2: x = 4. Check by substitution: 2(4) + 3 = 11.\n\nThe check catches mistakes instead of relying on intuition.\n\n## Practice\n\nCreate a problem using " + topic + ", solve it line by line, then substitute your answer back into the original statement. State any assumptions.\n\n## Common mistakes\n\n- Skipping intermediate steps\n- Applying a rule without checking its conditions\n- Forgetting units, domains, or restrictions",
+    science: "## How to investigate the idea\n\nSeparate observation from explanation. State a question, propose a testable hypothesis, identify independent and dependent variables, and record results with units. Change one variable at a time where possible and note sources of error.\n\n## Worked example\n\nQuestion: does changing light exposure affect plant growth? Keep plant type, soil, water, and container consistent; vary light exposure; measure height at the same time daily. The result supports a hypothesis only to the extent that the design rules out other explanations.\n\n## Practice\n\nDesign a safe investigation related to " + topic + ". State the hypothesis, variables, measurement method, and one limitation.\n\n## Common mistakes\n\n- Treating correlation as proof of causation\n- Ignoring measurement uncertainty or sample size\n- Making a conclusion stronger than the evidence supports",
+    economics: "## Worked example\n\nOpportunity cost is the value of the next-best alternative you give up. If you have two hours and could earn $10 per hour, choosing to study means giving up up to $20 in possible earnings. The calculation changes when the alternatives have different benefits or constraints.\n\nFor " + topic + ", distinguish assumptions from observations, ask who benefits, who bears the cost, and what changes when conditions change.\n\n## Practice\n\nChoose a real market or household decision. Identify the scarce resource, alternatives, trade-off, and one useful piece of data.\n\n## Common mistakes\n\n- Confusing nominal values with inflation-adjusted values\n- Treating assumptions as universal facts\n- Making causal claims from simple correlation",
+    "cyber-security": "## Defensive workflow\n\nIdentify the asset, assess the threat, reduce exposure, monitor signals, and document recovery. Record the system scope, weakness, likely impact, evidence, and remediation. Only test systems you own or have explicit written authorization to assess.\n\n## Worked example\n\nFor a fictional student portal, check whether multi-factor authentication is available, login attempts are rate-limited, and alerts detect unusual sign-ins. Validate fixes in a controlled test.\n\n## Practice\n\nCreate a threat model for a fictional portal: list three assets, two threats, one control per threat, and how you would verify each control.\n\n## Common mistakes\n\n- Testing systems without authorization\n- Confusing a scan with proof of exploitability\n- Writing findings without actionable remediation",
+    "ethical-hacking": "## Authorized lab workflow\n\nEthical testing starts with written permission and a defined scope. Use a local training lab or intentionally vulnerable practice environment. Document objectives, safe steps, evidence, impact, and remediation; stop if a test risks affecting real users or data.\n\n## Worked example\n\nFor a fictional login page, map expected behavior and permissions first. Test input validation with harmless lab values, record unexpected responses, and recommend parameterized queries or strict validation when appropriate. Never test a third-party system without explicit authorization.\n\n## Practice\n\nWrite a test plan for a local demo application: scope, allowed actions, out-of-scope systems, evidence, stop conditions, and report format.",
+    "ai-ml": "## Worked example\n\nA machine-learning workflow defines the target, collects representative data, separates training and test data, fits a baseline, measures performance, and checks failure cases. Keep the test set separate until final evaluation; repeatedly tuning against it leaks evaluation information.\n\nFor " + topic + ", compare a simple baseline with a more complex method and explain which metric matters for the task.\n\n## Practice\n\nChoose a fictional prediction task. Define input, target, possible data leakage, a baseline, and one metric. Explain the consequences of false positives and false negatives.\n\n## Common mistakes\n\n- Evaluating only on training data\n- Ignoring class imbalance or data leakage\n- Treating a score as proof of fairness or reliability",
+    history: "## Read evidence, not just summaries\n\nBuild a timeline, identify people and institutions, and distinguish primary sources from later interpretations. Ask who created a source, when, for what audience, and what perspective may be missing. Historical explanations often have multiple causes.\n\n## Practice\n\nFor " + topic + ", write a three-point timeline, name a primary source you would seek, and explain one limitation in the evidence available to you.\n\n## Common mistakes\n\n- Judging the past without considering context\n- Treating one source as a complete account\n- Confusing chronological sequence with proof of causation",
+    languages: "## Practice in context\n\nLearn " + topic + " through short, meaningful phrases rather than isolated lists. Read a phrase aloud, identify the subject and verb, then change one detail to make a new sentence. Revisit it later to strengthen recall.\n\n## Practice\n\nCreate five short sentences using the key pattern. Say them aloud, translate them back without looking, and mark words or grammar you had to guess. Check pronunciation with a reputable dictionary or native audio source.\n\n## Common mistakes\n\n- Memorizing translations without learning usage\n- Ignoring pronunciation and word order\n- Assuming literal translation always sounds natural",
+    business: "## Worked example\n\nTurn a business idea into a testable hypothesis: a specific customer group has a problem and will pay a certain amount for a solution. Interview potential customers, observe current alternatives, and run a low-cost test before investing heavily. Record actual behavior, not only stated interest.\n\n## Practice\n\nFor " + topic + ", define the target customer, problem, value proposition, success metric, and cheapest experiment that could disprove your assumption.\n\n## Common mistakes\n\n- Treating compliments as proof of willingness to pay\n- Ignoring costs, cash flow, and customer acquisition\n- Scaling before validating demand",
+    trading: "## Risk-first example\n\nBefore a hypothetical trade, define the maximum acceptable loss, position size, entry rationale, exit conditions, and what invalidates the idea. A stop order may not execute at its exact stop price in a fast or illiquid market. Past performance does not guarantee future returns.\n\n## Practice\n\nUse paper trading only. Record a hypothetical entry, invalidation point, maximum planned loss, and rationale. Review the result against the plan rather than judging only profit or loss.\n\n## Common mistakes\n\n- Risking money you cannot afford to lose\n- Treating a chart pattern as a reliable prediction\n- Ignoring fees, slippage, leverage, and emotions"
+  };
+
+  const categoryLesson = teaching[categoryId] || ("## Apply the concept\n\nUse a real or fictional scenario related to " + topic + ". Describe the situation, identify the key concept, explain your reasoning, and state what additional information could change your conclusion. For health, law, finance, or psychology, treat this as general education rather than individualized professional advice.\n\n## Practice\n\n1. Explain " + topic + " in your own words.\n2. Give one realistic example and one counterexample.\n3. List two questions you would check in a trusted textbook, official source, or peer-reviewed reference.\n4. Teach the idea to someone else and ask which step was unclear.\n\n## Common mistakes\n\n- Memorizing a definition without applying it\n- Ignoring exceptions, uncertainty, or context\n- Treating general educational content as professional advice");
+
+  const source = categoryId === "technology" ? "Further reading: MDN Web Docs (developer.mozilla.org) or official documentation for the language/framework."
+    : categoryId === "mathematics" || categoryId === "science" ? "Further reading: OpenStax free textbooks (openstax.org) and Khan Academy practice material (khanacademy.org)."
+    : categoryId === "cyber-security" || categoryId === "ethical-hacking" ? "Further reading: NIST Cybersecurity Framework (nist.gov/cyberframework) and OWASP guidance (owasp.org). Practice only in authorized labs."
+    : categoryId === "ai-ml" ? "Further reading: Google Machine Learning Crash Course (developers.google.com/machine-learning/crash-course) and official library documentation."
+    : categoryId === "economics" ? "Further reading: World Bank Open Data (data.worldbank.org) and IMF Data (imf.org/en/Data). Check dates and country context."
+    : "Source note: this is a learning scaffold. Verify important facts against a reputable textbook, official source, or peer-reviewed reference.";
+
+  return common + "\n\n" + categoryLesson + "\n\n## Check your understanding\n\nWithout looking back, explain the key idea in two sentences. Then name one limitation, exception, or real-world factor that could change how it applies.\n\n## Source and quality note\n\n" + source + "\n\nThis is educational material, not an accredited course or professional qualification. Lesson template " + (index + 1) + " should be supplemented with verified, topic-specific examples and sources before high-stakes use.";
 }
 
 const questionBankByCategory: Record<string, Question[]> = {
@@ -507,23 +520,18 @@ const genericQuestionTemplates: { q: string; opts: string[]; ci: number; exp: st
   { q: 'How does visualization help in learning {T}?', opts: ['It does not help', 'Creating mental images enhances understanding and recall', 'Only for visual learners', 'Visualization is distracting'], ci: 1, exp: 'Mental visualization creates additional memory pathways, improving both understanding and recall.' },
 ];
 
-function generateQuestions(courseTitle: string, categoryId: string): Question[] {
+function generateQuestions(_courseTitle: string, categoryId: string): Question[] {
   const categoryQs = questionBankByCategory[categoryId] || [];
-  const questions: Question[] = [...categoryQs];
-  
-  // Add generic questions with course title substituted
-  const remaining = 200 - questions.length;
-  const generics = genericQuestionTemplates.slice(0, remaining).map(t => ({
-    question: t.q.replace(/{T}/g, courseTitle),
-    options: t.opts,
-    correctIndex: t.ci,
-    explanation: t.exp,
+  // Keep curated subject-bank questions instead of padding every course with generic filler.
+  return categoryQs.map((question, index) => ({
+    ...question,
+    difficulty: index < Math.ceil(categoryQs.length * 0.4)
+      ? 'Beginner'
+      : index < Math.ceil(categoryQs.length * 0.75)
+        ? 'Intermediate'
+        : 'Advanced',
   }));
-  
-  questions.push(...generics);
-  return questions.slice(0, 200);
 }
-
 
 function generateCourseId(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -539,7 +547,7 @@ export const courses: Course[] = Object.entries(allCoursesByCategory).flatMap(([
       id: generateCourseId(title),
       title,
       categoryId,
-      description: `Master ${title} with ${lessons.length} in-depth lessons and ${questions.length} quiz questions. This expert-level course covers everything from fundamentals to advanced certification-ready content.`,
+      description: `A self-paced introduction to ${title} with ${lessons.length} guided lessons and ${questions.length} subject-bank practice questions. Use examples, check your understanding, and verify important facts with the suggested sources.`,
       difficulty: difficulties[i % 3],
       lessonsCount: lessons.length,
       questionsCount: questions.length,
