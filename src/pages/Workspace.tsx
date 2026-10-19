@@ -26,7 +26,7 @@ const Workspace = () => {
   const [session, setSession] = useState<SupabaseSession | null>(() => getSession());
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [authStep, setAuthStep] = useState<"none" | "enroll" | "verify">("none");
+  const [authStep, setAuthStep] = useState<"none" | "checking" | "enroll" | "verify">(() => getSession() ? "checking" : "none");
   const [mfaFactorId, setMfaFactorId] = useState("");
   const [mfaQrCode, setMfaQrCode] = useState("");
   const [mfaSecret, setMfaSecret] = useState("");
@@ -85,6 +85,36 @@ const Workspace = () => {
     window.addEventListener("quizvault:auth-changed", onAuth);
     return () => window.removeEventListener("quizvault:auth-changed", onAuth);
   }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session || authStep !== "checking") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const factors = await listMfaFactors();
+        if (cancelled) return;
+        const verifiedTotp = (factors.totp || []).find(factor => factor.status === "verified");
+        if (verifiedTotp) {
+          setMfaFactorId(verifiedTotp.id);
+          setAuthStep("verify");
+          setNotice("Enter the current six-digit code from your authenticator app.");
+          return;
+        }
+        const enrollment = await enrollTotpFactor();
+        if (cancelled) return;
+        setMfaFactorId(enrollment.id);
+        setMfaQrCode(enrollment.totp.qr_code);
+        setMfaSecret(enrollment.totp.secret);
+        setAuthStep("enroll");
+        setNotice("Scan this QR code in your authenticator app, then enter its six-digit code.");
+      } catch (e) {
+        if (cancelled) return;
+        signOut(); setSession(null); setAuthStep("none");
+        setError(e instanceof Error ? e.message : "Could not prepare authenticator verification. Please sign in again.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session?.user.id, authStep]);
 
   const saveItem = async (kind: WorkspaceKind, itemTitle: string, content: Record<string, unknown>) => {
     if (!itemTitle.trim()) { setError("Add a title first."); return; }
@@ -206,21 +236,12 @@ const Workspace = () => {
         setNotice("Account request received, but email confirmation is still enabled in Supabase. Turn off Confirm email in Authentication settings before authenticator setup can start.");
         return;
       }
-      const factors = await listMfaFactors();
-      const verifiedTotp = (factors.totp || []).find(factor => factor.status === "verified");
-      if (authMode === "signin" && verifiedTotp) {
-        setMfaFactorId(verifiedTotp.id);
-        setAuthStep("verify");
-        setNotice("Enter the current six-digit code from your authenticator app.");
-      } else {
-        const enrollment = await enrollTotpFactor();
-        setMfaFactorId(enrollment.id);
-        setMfaQrCode(enrollment.totp.qr_code);
-        setMfaSecret(enrollment.totp.secret);
-        setAuthStep("enroll");
-        setNotice("Scan this QR code in your authenticator app, then enter its six-digit code.");
-      }
-    } catch (e) { setError(e instanceof Error ? e.message : "Authentication failed."); }
+      setAuthStep("checking");
+      setNotice("Preparing your authenticator security step…");
+    } catch (e) {
+      signOut(); setSession(null); setAuthStep("none");
+      setError(e instanceof Error ? e.message : "Authentication failed.");
+    }
     finally { setBusy(false); }
   };
 
@@ -245,14 +266,14 @@ const Workspace = () => {
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><LockKeyhole className="h-6 w-6" /></div>
         <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">QuizVault security</p>
-        <h1 className="mt-2 font-display text-2xl font-bold">{authStep === "enroll" ? "Connect your authenticator app" : "Two-step verification"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{authStep === "enroll" ? "Scan this QR code using Google Authenticator, Microsoft Authenticator, 1Password, or another authenticator app. Then enter the current six-digit code below." : "Open your authenticator app and enter the current six-digit QuizVault code to continue."}</p>
+        <h1 className="mt-2 font-display text-2xl font-bold">{authStep === "checking" ? "Preparing secure sign-in" : authStep === "enroll" ? "Connect your authenticator app" : "Two-step verification"}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{authStep === "checking" ? "Checking your account security settings…" : authStep === "enroll" ? "Scan this QR code using Google Authenticator, Microsoft Authenticator, 1Password, or another authenticator app. Then enter the current six-digit code below." : "Open your authenticator app and enter the current six-digit QuizVault code to continue."}</p>
         {authStep === "enroll" && mfaQrCode && <div className="my-5 flex flex-col items-center gap-3 rounded-xl border border-border bg-white p-4">
           <img src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(mfaQrCode)}`} alt="QuizVault authenticator enrollment QR code" className="h-52 w-52 max-w-full" />
           <p className="text-center text-xs text-slate-600">Can't scan it? Add this setup key manually:</p>
           <code className="select-all break-all text-center text-sm text-slate-900">{mfaSecret}</code>
         </div>}
-        <form onSubmit={submitMfaCode} className="mt-5 grid gap-3">
+        {authStep !== "checking" && <form onSubmit={submitMfaCode} className="mt-5 grid gap-3">
           <label className="text-sm font-semibold" htmlFor="quizvault-mfa-code">Six-digit authenticator code</label>
           <input id="quizvault-mfa-code" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" />
           <button disabled={busy || mfaCode.length !== 6} className="h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : authStep === "enroll" ? "Verify and enable authenticator" : "Verify and continue"}</button>
