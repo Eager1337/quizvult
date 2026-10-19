@@ -160,7 +160,7 @@ const CoursePage = () => {
                   </select>
                 </label>
               </div>
-              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> {Math.min(difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30, course.questions.filter(q => difficulty === "Beginner" ? (q.difficulty === "Beginner" || !q.difficulty) : difficulty === "Intermediate" ? q.difficulty !== "Advanced" : true).length || course.questions.length)} questions · {examMode === "timed" ? `${examMinutes} minute time limit` : "No time limit"}</p>
+              <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" /> {Math.min(difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30, course.questions.filter(q => !q.difficulty || q.difficulty === difficulty).length || course.questions.length)} questions · {examMode === "timed" ? `${examMinutes} minute time limit` : "No time limit"}</p>
               {!course.questions.some(question => question.difficulty) && <p className="mt-2 text-xs leading-relaxed text-amber-700 dark:text-amber-300">This learning path currently uses a general subject question bank. The selected level changes exam length, but individual questions have not yet been independently level-rated.</p>}
             </div>
             <h2 className="mb-5 font-display text-xl font-bold text-foreground">{examMode === "timed" ? "Timed exam" : "Practice quiz"}: {course.title}</h2>
