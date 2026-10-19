@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import CourseCard from "@/components/CourseCard";
 import { courses } from "@/data/courses";
-import { deleteLearningRecord, getSession, isSupabaseConfigured, loadLearningRecords } from "@/lib/supabase";
+import { deleteLearningRecord, getSession, isSupabaseConfigured, loadLearningRecords, saveLearningRecord } from "@/lib/supabase";
 import { BookmarkCheck, BookOpen, Trash2 } from "lucide-react";
 
 const SavedCourses = () => {
@@ -22,9 +22,19 @@ const SavedCourses = () => {
       void loadLearningRecords<{ course_id: string }>("saved_courses", "select=course_id")
         .then(records => {
           if (!active) return;
-          const merged = [...new Set([...localIds, ...records.map(record => record.course_id)])];
+          const remoteIds = new Set(records.map(record => record.course_id));
+          const merged = [...new Set([...localIds, ...remoteIds])];
           setSavedIds(merged);
           localStorage.setItem("quizvault.savedCourses", JSON.stringify(merged));
+          const session = getSession();
+          if (session) {
+            for (const courseId of localIds) {
+              if (!remoteIds.has(courseId)) {
+                void saveLearningRecord("rest/v1/saved_courses", { user_id: session.user.id, course_id: courseId })
+                  .catch(error => console.error("Could not sync locally saved course", error));
+              }
+            }
+          }
         })
         .catch(error => console.error("Could not load saved courses", error))
         .finally(() => { if (active) setLoading(false); });
