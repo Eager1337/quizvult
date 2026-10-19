@@ -19,6 +19,13 @@ const CoursePage = () => {
   const [examMinutes, setExamMinutes] = useState(10);
   const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [savedCourse, setSavedCourse] = useState(false);
+  const [authRevision, setAuthRevision] = useState(0);
+
+  useEffect(() => {
+    const onAuthChanged = () => setAuthRevision(value => value + 1);
+    window.addEventListener("quizvault:auth-changed", onAuthChanged);
+    return () => window.removeEventListener("quizvault:auth-changed", onAuthChanged);
+  }, []);
 
   useEffect(() => {
     if (!course) return;
@@ -60,7 +67,7 @@ const CoursePage = () => {
     } catch {
       setCompletedLessons([]);
     }
-  }, [course?.id]);
+  }, [course?.id, authRevision]);
 
   const progress = useMemo(() => course ? Math.round((completedLessons.length / Math.max(1, course.lessons.length)) * 100) : 0, [course, completedLessons]);
 
