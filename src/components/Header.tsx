@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, BookmarkCheck } from 'lucide-react';
 
 const Header = () => {
   const [query, setQuery] = useState('');
