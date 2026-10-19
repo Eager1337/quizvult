@@ -227,7 +227,7 @@ const StudyTools = ({ courseTitle }: { courseTitle: string }) => {
         <div className="mt-6 grid grid-cols-2 gap-2 md:grid-cols-4">
           {toolOptions.map(option => {
             const Icon = option.icon;
-            return <button key={option.id} type="button" onClick={() => setKind(option.id)} className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-semibold transition-colors ${kind === option.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground hover:border-primary/40"}`}>
+            return <button key={option.id} type="button" onClick={() => { setKind(option.id); setResult(null); }} className={`flex items-center gap-2 rounded-xl border p-3 text-left text-sm font-semibold transition-colors ${kind === option.id ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground hover:border-primary/40"}`}>
               <Icon className="h-4 w-4 shrink-0" />{option.label}
             </button>;
           })}
