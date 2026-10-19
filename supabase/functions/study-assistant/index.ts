@@ -1,10 +1,12 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const appOrigin = Deno.env.get("APP_ORIGIN") || "";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("APP_ORIGIN") || "*",
+  "Access-Control-Allow-Origin": appOrigin || "null",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
 };
 
 serve(async (req) => {
@@ -15,8 +17,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!supabaseUrl || !anonKey || !geminiKey) {
-      return json({ error: "Configure SUPABASE_URL, SUPABASE_ANON_KEY, and GEMINI_API_KEY in Edge Function secrets." }, 503);
+    if (!supabaseUrl || !anonKey || !geminiKey || !appOrigin) {
+      return json({ error: "Configure SUPABASE_URL, SUPABASE_ANON_KEY, GEMINI_API_KEY, and APP_ORIGIN in Edge Function secrets." }, 503);
+    }
+    const requestOrigin = req.headers.get("Origin");
+    if (requestOrigin && requestOrigin !== appOrigin) {
+      return json({ error: "This application origin is not allowed to use the study assistant." }, 403);
     }
 
     const authHeader = req.headers.get("Authorization");
