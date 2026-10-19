@@ -16,7 +16,7 @@ export function getSession(): SupabaseSession | null {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const session = JSON.parse(raw) as SupabaseSession;
-    if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+    if (session.expires_at && session.expires_at * 1000 < Date.now() && !session.refresh_token) {
       localStorage.removeItem(SESSION_KEY);
       return null;
     }
