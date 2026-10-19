@@ -46,4 +46,4 @@ supabase functions deploy study-assistant
 - No course is represented as accredited or certification-ready.
 - Ethical hacking material is for authorized labs and defensive learning only.
 - Trading material is educational and does not guarantee returns.
-- A GitHub Actions workflow runs the test suite, lint, and production build on pushes and pull requests to `main`. Confirm its run result before release. Review question banks with subject-matter experts and test authentication, RLS, and Edge Function deployment in the actual Supabase project.
+- A GitHub Actions workflow runs the test suite, application and configuration TypeScript checks, lint, and production build on pushes and pull requests to `main`. Confirm its run result before release. Review question banks with subject-matter experts and test authentication, RLS, and Edge Function deployment in the actual Supabase project.
