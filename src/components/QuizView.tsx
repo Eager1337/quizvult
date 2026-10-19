@@ -15,6 +15,18 @@ const shuffle = <T,>(items: T[]): T[] => {
   return result;
 };
 
+const shuffleQuestionOptions = (question: Question): Question => {
+  const options = shuffle(question.options.map((option, originalIndex) => ({
+    option,
+    wasCorrect: originalIndex === question.correctIndex,
+  })));
+  return {
+    ...question,
+    options: options.map(item => item.option),
+    correctIndex: options.findIndex(item => item.wasCorrect),
+  };
+};
+
 const getBookmarks = (courseId: string): Question[] => {
   try { return JSON.parse(localStorage.getItem(`quizvault.bookmarks.${courseId}`) || "[]") as Question[]; }
   catch { return []; }
@@ -46,7 +58,7 @@ const QuizView = ({
       return question.difficulty === difficulty;
     });
     const pool = eligible.length ? eligible : questions;
-    return shuffle(pool).slice(0, Math.min(questionLimit, pool.length));
+    return shuffle(pool).slice(0, Math.min(questionLimit, pool.length)).map(shuffleQuestionOptions);
   }, [questions, questionLimit, difficulty, runId]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
