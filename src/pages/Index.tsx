@@ -32,14 +32,14 @@ const Index = () => {
             <div className="container mx-auto px-4 relative z-10">
               <div className="max-w-2xl animate-fade-in">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-white/90 mb-6 backdrop-blur-sm">
-                  <Sparkles className="h-4 w-4" /> 500+ Free Courses & Quizzes
+                  <Sparkles className="h-4 w-4" /> 500+ Learning Paths
                 </div>
                 <h1 className="font-display text-4xl md:text-6xl font-bold text-white leading-tight">
                   Learn Anything.<br />
                   <span className="text-accent">Quiz Yourself.</span>
                 </h1>
                 <p className="mt-4 text-lg text-white/70 max-w-lg">
-                  From ethical hacking to economics, trading to philosophy — master any subject with free lessons and interactive quizzes.
+                  Explore 20 subjects with guided lessons, randomized practice, progress tracking, and AI tools for studying your own notes.
                 </p>
                 <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white/10 backdrop-blur-sm p-2 max-w-md border border-white/10">
                   <Search className="h-5 w-5 text-white/60 ml-3" />
@@ -75,7 +75,7 @@ const Index = () => {
           <section className="container mx-auto px-4 -mt-8 relative z-20">
             <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
               {[
-                { icon: <BookOpen className="h-5 w-5" />, value: '500+', label: 'Courses' },
+                { icon: <BookOpen className="h-5 w-5" />, value: '500+', label: 'Learning paths' },
                 { icon: <GraduationCap className="h-5 w-5" />, value: '20', label: 'Categories' },
                 { icon: <Sparkles className="h-5 w-5" />, value: '100%', label: 'Free' },
               ].map((stat, i) => (
