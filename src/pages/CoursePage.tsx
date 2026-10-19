@@ -6,7 +6,7 @@ import LessonView from "@/components/LessonView";
 import StudyTools from "@/components/StudyTools";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BookOpen, HelpCircle, BarChart3, BookmarkCheck, Clock3, Sparkles } from "lucide-react";
-import { getSession, saveLearningRecord } from "@/lib/supabase";
+import { deleteLearningRecord, getSession, isSupabaseConfigured, loadLearningRecords, saveLearningRecord } from "@/lib/supabase";
 
 type Tab = "lessons" | "quiz" | "study";
 const CoursePage = () => {
@@ -23,9 +23,26 @@ const CoursePage = () => {
   useEffect(() => {
     if (!course) return;
     try {
-      setCompletedLessons(JSON.parse(localStorage.getItem(`quizvault.lessons.${course.id}`) || "[]") as number[]);
+      const localCompleted = JSON.parse(localStorage.getItem(`quizvault.lessons.${course.id}`) || "[]") as number[];
+      setCompletedLessons(localCompleted);
       const saved = JSON.parse(localStorage.getItem("quizvault.savedCourses") || "[]") as string[];
       setSavedCourse(saved.includes(course.id));
+      const session = getSession();
+      if (session && isSupabaseConfigured) {
+        void Promise.all([
+          loadLearningRecords<{ lesson_index: number }>("lesson_progress", `select=lesson_index&course_id=eq.${encodeURIComponent(course.id)}`),
+          loadLearningRecords<{ course_id: string }>("saved_courses", `select=course_id&course_id=eq.${encodeURIComponent(course.id)}`),
+        ]).then(([remoteLessons, remoteSaved]) => {
+          const mergedLessons = [...new Set([...localCompleted, ...remoteLessons.map(item => item.lesson_index)])];
+          setCompletedLessons(mergedLessons);
+          localStorage.setItem(`quizvault.lessons.${course.id}`, JSON.stringify(mergedLessons));
+          if (remoteSaved.length && !saved.includes(course.id)) {
+            const mergedSaved = [...new Set([...saved, course.id])];
+            localStorage.setItem("quizvault.savedCourses", JSON.stringify(mergedSaved));
+            setSavedCourse(true);
+          }
+        }).catch(error => console.error("Could not load synced learning progress", error));
+      }
     } catch {
       setCompletedLessons([]);
     }
@@ -56,6 +73,8 @@ const CoursePage = () => {
     if (session && !savedCourse) void saveLearningRecord("rest/v1/saved_courses", {
       user_id: session.user.id, course_id: course.id,
     }).catch(error => console.error("Could not sync saved course", error));
+    else if (session && savedCourse) void deleteLearningRecord("saved_courses", `course_id=eq.${encodeURIComponent(course.id)}`)
+      .catch(error => console.error("Could not remove saved course from Supabase", error));
   };
 
   return (
