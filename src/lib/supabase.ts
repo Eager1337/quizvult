@@ -70,7 +70,8 @@ export async function signUp(email: string, password: string) {
     { method: "POST", body: JSON.stringify({ email, password }) },
   );
   if (result.access_token) {
-    saveSession({ ...result, access_token: result.access_token, user: result.user, expires_at: Math.floor(Date.now() / 1000) + (result.expires_in || 3600) });\n    notifyAuthChanged();
+    saveSession({ ...result, access_token: result.access_token, user: result.user, expires_at: Math.floor(Date.now() / 1000) + (result.expires_in || 3600) });
+    notifyAuthChanged();
   }
   return result.user;
 }
@@ -81,12 +82,14 @@ export async function signIn(email: string, password: string) {
     { method: "POST", body: JSON.stringify({ email, password }) },
   );
   saveSession({ ...result, expires_at: Math.floor(Date.now() / 1000) + result.expires_in });
+  notifyAuthChanged();
   return result.user;
 }
 
 export function signOut() {
   const session = getSession();
   saveSession(null);
+  notifyAuthChanged();
   if (session && isSupabaseConfigured) {
     void fetch(`${SUPABASE_URL}/auth/v1/logout`, {
       method: "POST",
