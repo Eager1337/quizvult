@@ -32,7 +32,7 @@ const Index = () => {
             <div className="container mx-auto px-4 relative z-10">
               <div className="max-w-2xl animate-fade-in">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm text-white/90 mb-6 backdrop-blur-sm">
-                  <Sparkles className="h-4 w-4" /> 500+ Learning Paths
+                  <Sparkles className="h-4 w-4" /> 500+ Learning Topics
                 </div>
                 <h1 className="font-display text-4xl md:text-6xl font-bold text-white leading-tight">
                   Learn Anything.<br />
@@ -75,7 +75,7 @@ const Index = () => {
           <section className="container mx-auto px-4 -mt-8 relative z-20">
             <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
               {[
-                { icon: <BookOpen className="h-5 w-5" />, value: '500+', label: 'Learning paths' },
+                { icon: <BookOpen className="h-5 w-5" />, value: '500+', label: 'Learning topics' },
                 { icon: <GraduationCap className="h-5 w-5" />, value: '20', label: 'Categories' },
                 { icon: <Sparkles className="h-5 w-5" />, value: '100%', label: 'Free' },
               ].map((stat, i) => (
