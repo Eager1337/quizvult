@@ -47,6 +47,7 @@ supabase functions deploy study-assistant
 - Workspace areas include private document uploads/downloads/deletion, tasks with due dates, projects, personal milestones, travel plans, and AI text summarization/explanation. Learning tools remain available separately.
 - File upload requires a signed-in Supabase account and the workspace migration; uploads are stored in a non-public Storage bucket with per-user folder policies. Current UI upload limit is 50 MB per file. Local-only tasks and plans remain in that browser and do not become cloud-backed until signed in.
 - AI document tools currently accept pasted text; the existing study assistant handles the request. Direct PDF file-to-AI processing is not included in the workspace UI yet.
+- `ReadAloudExplainer` adds browser text-to-speech with speed/voice controls, microphone dictation where the browser supports Web Speech API, and a narrated, animated caption-scene mode for AI explanations and study materials. Browser voice availability varies. The scene mode is an in-app explainer, not a generated or downloadable MP4.
 
 ## Quality and safety notes
 
