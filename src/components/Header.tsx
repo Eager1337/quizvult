@@ -36,7 +36,7 @@ const Header = () => {
 
         <div className="flex items-center gap-3">
           <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Courses</Link>
-          <Link to="/saved" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"><BookmarkCheck className="h-4 w-4" /> Saved</Link>\n          <Link to="/progress" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"><BarChart3 className="h-4 w-4" /> Progress</Link>
+          <Link to="/saved" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"><BookmarkCheck className="h-4 w-4" /><span className="hidden sm:inline">Saved</span></Link>\n          <Link to="/progress" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"><BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Progress</span></Link>
         </div>
       </div>
     </header>
