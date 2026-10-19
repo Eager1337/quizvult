@@ -37,7 +37,15 @@ const QuizView = ({
 }) => {
   const questionLimit = difficulty === "Beginner" ? 10 : difficulty === "Intermediate" ? 20 : 30;
   const [runId, setRunId] = useState(0);
-  const quizQuestions = useMemo(() => shuffle(questions).slice(0, Math.min(questionLimit, questions.length)), [questions, questionLimit, runId]);
+  const quizQuestions = useMemo(() => {
+    const eligible = questions.filter(question => {
+      if (difficulty === "Beginner") return question.difficulty === "Beginner" || !question.difficulty;
+      if (difficulty === "Intermediate") return question.difficulty !== "Advanced";
+      return true;
+    });
+    const pool = eligible.length ? eligible : questions;
+    return shuffle(pool).slice(0, Math.min(questionLimit, pool.length));
+  }, [questions, questionLimit, difficulty, runId]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [answers, setAnswers] = useState<AnswerReview[]>([]);
