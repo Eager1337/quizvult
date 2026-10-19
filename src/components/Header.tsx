@@ -35,12 +35,8 @@ const Header = () => {
         </form>
 
         <div className="flex items-center gap-3">
-          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Courses
-          </Link>
-          <div className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
-            Saved learning
-          </div>
+          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Courses</Link>
+          <Link to="/saved" className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"><BookmarkCheck className="h-4 w-4" /> Saved</Link>
         </div>
       </div>
     </header>
