@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FileText, Sparkles, Upload, BookOpen, Brain, Layers, Loader2 } from "lucide-react";
+import ReadAloudExplainer from "@/components/ReadAloudExplainer";
 import { getSession, invokeStudyAssistant, isSupabaseConfigured, loadLearningRecords, signIn, signOut, signUp } from "@/lib/supabase";
 
 type ToolKind = "quiz" | "explanation" | "flashcards" | "summary";
@@ -33,6 +34,8 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
   ) : [];
   const strings = (value: unknown): string[] => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
   const score = questions.reduce((sum, question, index) => sum + (answers[index] === question.correctIndex ? 1 : 0), 0);
+  const quizNarration = [title, ...questions.flatMap(q => [q.question, ...q.options, q.explanation || ""])].filter(Boolean).join(". ");
+  const flashcardNarration = [title, ...cards.flatMap(card => ["Question: " + card.front, "Answer: " + card.back])].join(". ");
 
   if (kind === "quiz" && questions.length) return <div className="mt-5 space-y-5">
     <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
@@ -51,6 +54,7 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
       {submitted && <p className="mt-3 text-sm text-muted-foreground"><strong>Explanation:</strong> {question.explanation || "Review this answer against your notes."}</p>}
     </article>)}
     {!submitted ? <button type="button" onClick={() => setSubmitted(true)} disabled={Object.keys(answers).length !== questions.length} className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40">Submit answers</button> : <div className="rounded-xl bg-primary/10 p-4"><p className="font-display text-2xl font-bold text-primary">{score} / {questions.length} correct</p><button type="button" onClick={() => { setAnswers({}); setSubmitted(false); }} className="mt-3 text-sm font-semibold text-primary hover:underline">Try again</button></div>}
+    <ReadAloudExplainer text={quizNarration} title="Listen to this quiz" />
   </div>;
 
   if (kind === "flashcards" && cards.length) return <div className="mt-5 space-y-4">
@@ -71,6 +75,7 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
     Boolean(item && typeof item === "object" && typeof (item as {term?: unknown}).term === "string" && typeof (item as {definition?: unknown}).definition === "string")
   ) : [];
   const bodyText = [data.summary, data.explanation].filter((item): item is string => typeof item === "string");
+  const spokenText = [title, ...bodyText, typeof data.example === "string" ? "Example: " + data.example : "", ...keyPoints, ...terms.map(term => term.term + ": " + term.definition), ...limitations].filter(Boolean).join(". ");
   return <div className="mt-5 space-y-5">
     <h3 className="font-display text-xl font-bold text-foreground">{title}</h3>
     {bodyText.map((text, index) => <p key={index} className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>)}
@@ -80,6 +85,7 @@ const GeneratedContentView = ({ kind, payload }: { kind: ToolKind; payload: unkn
     {limitations.length > 0 && <section><h4 className="font-semibold text-foreground">Limitations and caveats</h4><ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground">{limitations.map((item, index) => <li key={index}>{item}</li>)}</ul></section>}
     {typeof data.sourceNotes === "string" && <p className="rounded-lg border border-border p-3 text-xs text-muted-foreground">Source notes: {data.sourceNotes}</p>}
     {!bodyText.length && !keyPoints.length && !terms.length && !cards.length && !questions.length && <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-4 text-sm text-foreground">{JSON.stringify(payload, null, 2)}</pre>}
+    <ReadAloudExplainer text={spokenText || JSON.stringify(payload)} title="Listen to this study material" />
   </div>;
 };
 
