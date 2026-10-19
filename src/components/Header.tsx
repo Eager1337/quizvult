@@ -39,7 +39,7 @@ const Header = () => {
             Courses
           </Link>
           <div className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
-            500+ Free
+            Saved learning
           </div>
         </div>
       </div>
