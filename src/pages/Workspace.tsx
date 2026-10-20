@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import ReadAloudExplainer from "@/components/ReadAloudExplainer";
-import { getSession, isSupabaseConfigured, sendEmailOtp, signOut, verifyEmailOtp, type SupabaseSession } from "@/lib/supabase";
+import { getSession, isSupabaseConfigured, sendEmailOtp, signOut, supabaseAnonKey, supabaseUrl, verifyEmailOtp, type SupabaseSession } from "@/lib/supabase";
 
 type WorkspaceKind = "task" | "project" | "journey" | "trip" | "note";
 type WorkspaceItem = { id: string; user_id?: string; kind: WorkspaceKind; title: string; content: Record<string, unknown>; created_at: string; updated_at?: string };
@@ -56,8 +56,8 @@ const Workspace = () => {
 
   const refreshWorkspace = async (activeSession = session) => {
     if (!activeSession || !isSupabaseConfigured) { setItems(loadLocalItems()); setFiles([]); return; }
-    const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+    const base = supabaseUrl;
+    const key = supabaseAnonKey;
     if (!base || !key) return;
     const headers = { apikey: key, Authorization: `Bearer ${activeSession.access_token}` };
     try {
@@ -90,8 +90,8 @@ const Workspace = () => {
     const item: WorkspaceItem = { id: crypto.randomUUID(), kind, title: itemTitle.trim(), content, created_at: now, updated_at: now };
     setError(""); setNotice("");
     if (session && isSupabaseConfigured) {
-      const base = import.meta.env.VITE_SUPABASE_URL as string;
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const base = supabaseUrl;
+      const key = supabaseAnonKey;
       try {
         const response = await fetch(`${base}/rest/v1/workspace_items`, {
           method: "POST", headers: { apikey: key, Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json", Prefer: "return=representation" },
@@ -108,8 +108,8 @@ const Workspace = () => {
 
   const deleteItem = async (item: WorkspaceItem) => {
     if (session && isSupabaseConfigured) {
-      const base = import.meta.env.VITE_SUPABASE_URL as string;
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const base = supabaseUrl;
+      const key = supabaseAnonKey;
       const response = await fetch(`${base}/rest/v1/workspace_items?id=eq.${encodeURIComponent(item.id)}`, {
         method: "DELETE", headers: { apikey: key, Authorization: `Bearer ${session.access_token}` },
       });
@@ -125,8 +125,8 @@ const Workspace = () => {
     if (file.size > 50 * 1024 * 1024) { setError("For this first version, files must be 50 MB or smaller."); return; }
     if (!session || !isSupabaseConfigured) { setError("Sign in with a configured Supabase account to securely upload files. Local-only files are not uploaded."); return; }
     setFileBusy(true); setError(""); setNotice("");
-    const base = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const base = supabaseUrl;
+    const key = supabaseAnonKey;
     const storagePath = `${session.user.id}/${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     try {
       const upload = await fetch(`${base}/storage/v1/object/quizvault-private/${storagePath.split("/").map(encodeURIComponent).join("/")}`, {
@@ -145,8 +145,8 @@ const Workspace = () => {
 
   const downloadFile = async (file: WorkspaceFile) => {
     if (!session) return;
-    const base = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const base = supabaseUrl;
+    const key = supabaseAnonKey;
     const response = await fetch(`${base}/storage/v1/object/quizvault-private/${file.storage_path.split("/").map(encodeURIComponent).join("/")}`, {
       headers: { apikey: key, Authorization: `Bearer ${session.access_token}` },
     });
@@ -157,8 +157,8 @@ const Workspace = () => {
 
   const deleteFile = async (file: WorkspaceFile) => {
     if (!session) return;
-    const base = import.meta.env.VITE_SUPABASE_URL as string;
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const base = supabaseUrl;
+    const key = supabaseAnonKey;
     const headers = { apikey: key, Authorization: `Bearer ${session.access_token}` };
     const response = await fetch(`${base}/storage/v1/object/quizvault-private/${file.storage_path.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE", headers });
     if (!response.ok) { setError("Could not delete this file."); return; }
@@ -171,8 +171,8 @@ const Workspace = () => {
     if (!session) { setError("Sign in to use AI document tools."); return; }
     setAiBusy(true); setError(""); setAiResult("");
     try {
-      const base = import.meta.env.VITE_SUPABASE_URL as string;
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      const base = supabaseUrl;
+      const key = supabaseAnonKey;
       const response = await fetch(`${base}/functions/v1/study-assistant`, {
         method: "POST", headers: { apikey: key, Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ kind: mode, topic: "Personal document assistant", sourceText: aiText, sourceName: "Pasted document text" }),
