@@ -212,10 +212,24 @@ const Workspace = () => {
     } finally { setBusy(false); }
   };
 
+  const resendEmailCode = async () => {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      await sendEmailOtp(email, authMode === "signup", {
+        full_name: displayName.trim(),
+        username: username.trim().replace(/^@/, ""),
+      });
+      setOtpCode("");
+      setNotice(`A new one-time code has been sent to ${email.trim()}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not resend your email code.");
+    } finally { setBusy(false); }
+  };
+
   const submitEmailCode = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
-      if (!/^\\d{6}$/.test(otpCode.trim())) throw new Error("Enter the six-digit code from your email.");
+      if (!/^\d{6}$/.test(otpCode.trim())) throw new Error("Enter the six-digit code from your email.");
       await verifyEmailOtp(email, otpCode);
       const next = getSession();
       setSession(next);
@@ -239,7 +253,7 @@ const Workspace = () => {
       {!session && (!otpSent ? <form onSubmit={doAuth} className="mb-6 grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2 md:items-end">
         {authMode === "signup" && <>
           <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Your name</label><input required value={displayName} onChange={e=>setDisplayName(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="Eager" /></div>
-          <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Username</label><input required value={username} onChange={e=>setUsername(e.target.value.replace(/\\s/g, ""))} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="ebeaver091" autoCapitalize="none" /></div>
+          <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Username</label><input required value={username} onChange={e=>setUsername(e.target.value.replace(/\s/g, ""))} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="ebeaver091" autoCapitalize="none" /></div>
         </>}
         <div className={authMode === "signup" ? "md:col-span-2" : ""}><label className="mb-1 block text-xs font-semibold text-muted-foreground">Email address</label><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="you@example.com" autoComplete="email" /></div>
         <button disabled={busy} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Sending code…" : authMode === "signup" ? "Sign up with email code" : "Email me a login code"}</button>
@@ -248,9 +262,9 @@ const Workspace = () => {
         <h2 className="font-display text-lg font-bold">Enter your email code</h2>
         <p className="text-sm text-muted-foreground">We sent a six-digit code to <strong>{email}</strong>. Enter it below to {authMode === "signup" ? "finish creating your account" : "sign in"}.</p>
         <label className="text-xs font-semibold text-muted-foreground" htmlFor="quizvault-email-otp">Six-digit code</label>
-        <input id="quizvault-email-otp" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\D/g, "").slice(0,6))} className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" placeholder="000000" />
+        <input id="quizvault-email-otp" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\D/g, "").slice(0,6))} className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" placeholder="000000" />
         <button disabled={busy || otpCode.length !== 6} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : "Verify code and continue"}</button>
-        <div className="flex flex-wrap gap-4 text-sm"><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Change email / back</button><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Resend code</button></div>
+        <div className="flex flex-wrap gap-4 text-sm"><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Change email / back</button><button type="button" disabled={busy} onClick={() => void resendEmailCode()} className="font-semibold text-primary">Resend code</button></div>
       </form>)}}
       {session && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"><span className="text-sm text-muted-foreground">Cloud sync is active for this account when Supabase is configured.</span><button onClick={() => { signOut(); setSession(null); setFiles([]); setItems(loadLocalItems()); }} className="text-sm font-semibold text-primary">Sign out</button></div>}
       {tab === "overview" && <>
