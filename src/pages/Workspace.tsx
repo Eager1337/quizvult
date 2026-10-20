@@ -228,29 +228,6 @@ const Workspace = () => {
     } finally { setBusy(false); }
   };
 
-  if (session && authStep !== "none") {
-    return <div className="min-h-screen bg-background"><Header /><main className="container mx-auto flex max-w-xl flex-col justify-center px-4 py-12">
-      <section className="rounded-2xl border   return <div className="min-h-screen bg-background"><Header /><main className="container mx-auto flex max-w-xl flex-col justify-center px-4 py-12">
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><LockKeyhole className="h-6 w-6" /></div>
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">QuizVault security</p>
-        <h1 className="mt-2 font-display text-2xl font-bold">{authStep === "checking" ? "Preparing secure sign-in" : authStep === "enroll" ? "Connect your authenticator app" : "Two-step verification"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{authStep === "checking" ? "Checking your account security settings…" : authStep === "enroll" ? "Scan this QR code using Google Authenticator, Microsoft Authenticator, 1Password, or another authenticator app. Then enter the current six-digit code below." : "Open your authenticator app and enter the current six-digit QuizVault code to continue."}</p>
-        {authStep === "enroll" && mfaQrCode && <div className="my-5 flex flex-col items-center gap-3 rounded-xl border border-border bg-white p-4">
-          <img src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(mfaQrCode)}`} alt="QuizVault authenticator enrollment QR code" className="h-52 w-52 max-w-full" />
-          <p className="text-center text-xs text-slate-600">Can't scan it? Add this setup key manually:</p>
-          <code className="select-all break-all text-center text-sm text-slate-900">{mfaSecret}</code>
-        </div>}
-        {authStep !== "checking" && <form onSubmit={submitMfaCode} className="mt-5 grid gap-3">
-          <label className="text-sm font-semibold" htmlFor="quizvault-mfa-code">Six-digit authenticator code</label>
-          <input id="quizvault-mfa-code" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={mfaCode} onChange={e => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" />
-          <button disabled={busy || mfaCode.length !== 6} className="h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : authStep === "enroll" ? "Verify and enable authenticator" : "Verify and continue"}</button>
-        </form>
-        <button onClick={() => { signOut(); setSession(null); setAuthStep("none"); setMfaFactorId(""); setMfaQrCode(""); setMfaSecret(""); setMfaCode(""); }} className="mt-4 w-full text-sm font-semibold text-primary">Cancel and sign out</button>
-      </section>
-    </main></div>;
-  }
-
   return <div className="min-h-screen bg-background"><Header />
     <div className="container mx-auto max-w-7xl px-4 py-8 md:py-10">
       <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-end">
