@@ -62,7 +62,20 @@ async function request<T>(path: string, init: RequestInit = {}, authenticated = 
     },
   });
   const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(payload?.msg || payload?.message || payload?.error_description || "Supabase request failed.");
+  if (!response.ok) {
+    const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || "";
+    const code = payload?.code || payload?.error_code || "";
+    if (code === "email_address_not_authorized" || /email address not authorized/i.test(String(message))) {
+      throw new Error("QuizVault cannot email this address yet. Supabase's default sender only delivers to project team addresses. Configure custom SMTP in Supabase Authentication settings, then set the Magic Link email template to include {{ .Token }} for six-digit codes.");
+    }
+    if (/rate limit|too many requests/i.test(String(message))) {
+      throw new Error("Too many code requests. Wait at least 60 seconds before requesting another email code.");
+    }
+    if (/invalid.*token|token.*expired/i.test(String(message))) {
+      throw new Error("That code is invalid or expired. Request a new code and try again.");
+    }
+    throw new Error(message || "Supabase request failed.");
+  }
   return payload as T;
 }
 
