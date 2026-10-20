@@ -1,5 +1,7 @@
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || "https://sqqcwbsywelydnsdzlis.supabase.co";
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) || "sb_publishable_oDnkek9sIXE8VVNQqByuCg_5gVl8GcW";
+export const supabaseUrl = SUPABASE_URL;
+export const supabaseAnonKey = SUPABASE_ANON_KEY;
 const SESSION_KEY = "quizvault.supabase.session";
 
 export type SupabaseSession = {
