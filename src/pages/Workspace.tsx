@@ -84,36 +84,6 @@ const Workspace = () => {
     return () => window.removeEventListener("quizvault:auth-changed", onAuth);
   }, [session?.user.id]);
 
-  useEffect(() => {
-    if (!session || authStep !== "checking") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const factors = await listMfaFactors();
-        if (cancelled) return;
-        const verifiedTotp = (factors.totp || []).find(factor => factor.status === "verified");
-        if (verifiedTotp) {
-          setMfaFactorId(verifiedTotp.id);
-          setAuthStep("verify");
-          setNotice("Enter the current six-digit code from your authenticator app.");
-          return;
-        }
-        const enrollment = await enrollTotpFactor();
-        if (cancelled) return;
-        setMfaFactorId(enrollment.id);
-        setMfaQrCode(enrollment.totp.qr_code);
-        setMfaSecret(enrollment.totp.secret);
-        setAuthStep("enroll");
-        setNotice("Scan this QR code in your authenticator app, then enter its six-digit code.");
-      } catch (e) {
-        if (cancelled) return;
-        signOut(); setSession(null); setAuthStep("none");
-        setError(e instanceof Error ? e.message : "Could not prepare authenticator verification. Please sign in again.");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [session?.user.id, authStep]);
-
   const saveItem = async (kind: WorkspaceKind, itemTitle: string, content: Record<string, unknown>) => {
     if (!itemTitle.trim()) { setError("Add a title first."); return; }
     const now = new Date().toISOString();
@@ -303,7 +273,7 @@ const Workspace = () => {
         <label className="text-xs font-semibold text-muted-foreground" htmlFor="quizvault-email-otp">Six-digit code</label>
         <input id="quizvault-email-otp" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\D/g, "").slice(0,6))} className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" placeholder="000000" />
         <button disabled={busy || otpCode.length !== 6} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : "Verify code and continue"}</button>
-        <div className="flex flex-wrap gap-4 text-sm"><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Change email / back</button><button type="button" disabled={busy} onClick={() => void doAuth({ preventDefault: () => {} } as FormEvent)} className="font-semibold text-primary">Resend code</button></div>
+        <div className="flex flex-wrap gap-4 text-sm"><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Change email / back</button><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Resend code</button></div>
       </form>)}}
       {session && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"><span className="text-sm text-muted-foreground">Cloud sync is active for this account when Supabase is configured.</span><button onClick={() => { signOut(); setSession(null); setFiles([]); setItems(loadLocalItems()); }} className="text-sm font-semibold text-primary">Sign out</button></div>}
       {tab === "overview" && <>
