@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/Header";
 import ReadAloudExplainer from "@/components/ReadAloudExplainer";
-import { challengeTotpFactor, enrollTotpFactor, getSession, isSupabaseConfigured, listMfaFactors, signIn, signOut, signUp, verifyTotpFactor, type SupabaseSession } from "@/lib/supabase";
+import { getSession, isSupabaseConfigured, sendEmailOtp, signOut, verifyEmailOtp, type SupabaseSession } from "@/lib/supabase";
 
 type WorkspaceKind = "task" | "project" | "journey" | "trip" | "note";
 type WorkspaceItem = { id: string; user_id?: string; kind: WorkspaceKind; title: string; content: Record<string, unknown>; created_at: string; updated_at?: string };
@@ -25,12 +25,10 @@ const fmtDate = (value: string) => new Date(value).toLocaleDateString(undefined,
 const Workspace = () => {
   const [session, setSession] = useState<SupabaseSession | null>(() => getSession());
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [authStep, setAuthStep] = useState<"none" | "checking" | "enroll" | "verify">(() => getSession() ? "checking" : "none");
-  const [mfaFactorId, setMfaFactorId] = useState("");
-  const [mfaQrCode, setMfaQrCode] = useState("");
-  const [mfaSecret, setMfaSecret] = useState("");
-  const [mfaCode, setMfaCode] = useState("");
+  const [displayName, setDisplayName] = useState("Eager");
+  const [username, setUsername] = useState("ebeaver091");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
   const [profileType, setProfileType] = useState("Personal");
   const [tab, setTab] = useState<Tab>("overview");
@@ -227,42 +225,42 @@ const Workspace = () => {
   const visibleItems = tab === "tasks" ? items.filter(i => i.kind === "task") : tab === "projects" ? items.filter(i => i.kind === "project") : tab === "journey" ? items.filter(i => i.kind === "journey") : tab === "travel" ? items.filter(i => i.kind === "trip") : [];
 
   const doAuth = async (event: FormEvent) => {
-    event.preventDefault(); setBusy(true); setError(""); setNotice(""); setMfaCode("");
-    try {
-      if (!isSupabaseConfigured) throw new Error("Supabase account access is not configured.");
-      if (authMode === "signup") await signUp(email, password); else await signIn(email, password);
-      const next = getSession(); setSession(next);
-      if (!next) {
-        setNotice("Account request received, but email confirmation is still enabled in Supabase. Turn off Confirm email in Authentication settings before authenticator setup can start.");
-        return;
-      }
-      setAuthStep("checking");
-      setNotice("Preparing your authenticator security step…");
-    } catch (e) {
-      signOut(); setSession(null); setAuthStep("none");
-      setError(e instanceof Error ? e.message : "Authentication failed.");
-    }
-    finally { setBusy(false); }
-  };
-
-  const submitMfaCode = async (event: FormEvent) => {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
-      if (!mfaFactorId) throw new Error("Authenticator setup expired. Please sign in again.");
-      const challenge = await challengeTotpFactor(mfaFactorId);
-      await verifyTotpFactor(mfaFactorId, challenge.id, mfaCode.trim());
+      if (!isSupabaseConfigured) throw new Error("QuizVault email login is not configured.");
+      if (!email.trim()) throw new Error("Enter your email address.");
+      if (authMode === "signup" && (!displayName.trim() || !username.trim())) throw new Error("Enter your name and username.");
+      await sendEmailOtp(email, authMode === "signup", {
+        full_name: displayName.trim(),
+        username: username.trim().replace(/^@/, ""),
+      });
+      setOtpSent(true);
+      setOtpCode("");
+      setNotice(`A one-time login code has been sent to ${email.trim()}. Check your inbox and spam folder.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not send your email code.");
+    } finally { setBusy(false); }
+  };
+
+  const submitEmailCode = async (event: FormEvent) => {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      if (!/^\\d{6}$/.test(otpCode.trim())) throw new Error("Enter the six-digit code from your email.");
+      await verifyEmailOtp(email, otpCode);
       const next = getSession();
       setSession(next);
-      setAuthStep("none");
-      setMfaCode("");
-      setNotice(authStep === "enroll" ? "Authenticator app successfully linked to your QuizVault account." : "Authenticator code verified. Welcome back.");
+      setOtpSent(false);
+      setOtpCode("");
+      setNotice("Email verified. Welcome to QuizVault.");
       if (next) await refreshWorkspace(next);
-    } catch (e) { setError(e instanceof Error ? e.message : "That authenticator code could not be verified. Check the current six-digit code and try again."); }
-    finally { setBusy(false); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That code is invalid or expired. Request a new one and try again.");
+    } finally { setBusy(false); }
   };
 
   if (session && authStep !== "none") {
     return <div className="min-h-screen bg-background"><Header /><main className="container mx-auto flex max-w-xl flex-col justify-center px-4 py-12">
+      <section className="rounded-2xl border   return <div className="min-h-screen bg-background"><Header /><main className="container mx-auto flex max-w-xl flex-col justify-center px-4 py-12">
       <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><LockKeyhole className="h-6 w-6" /></div>
         <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">QuizVault security</p>
@@ -291,12 +289,22 @@ const Workspace = () => {
       </div>
       <div className="mb-6 flex flex-wrap gap-2">{tabs.map(t => { const Icon = t.icon; return <button key={t.id} onClick={() => { setTab(t.id); setError(""); setNotice(""); }} className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${tab === t.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" />{t.label}</button>; })}</div>
       {(error || notice) && <div className={`mb-5 flex items-start justify-between gap-3 rounded-xl border p-3 text-sm ${error ? "border-destructive/40 bg-destructive/5 text-destructive" : "border-primary/30 bg-primary/5 text-foreground"}`}><span>{error || notice}</span><button onClick={() => { setError(""); setNotice(""); }} aria-label="Dismiss message"><X className="h-4 w-4" /></button></div>}
-      {!session && <form onSubmit={doAuth} className="mb-6 grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
-        <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Email</label><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="you@example.com" /></div>
-        <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Password</label><input required minLength={8} type="password" value={password} onChange={e=>setPassword(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="At least 8 characters" /></div>
-        <button disabled={busy} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Please wait…" : authMode === "signup" ? "Create account" : "Sign in"}</button>
-        <button type="button" onClick={() => setAuthMode(authMode === "signup" ? "signin" : "signup")} className="h-10 px-2 text-sm font-semibold text-primary">{authMode === "signup" ? "I have an account" : "Create account"}</button>
-      </form>}
+      {!session && (!otpSent ? <form onSubmit={doAuth} className="mb-6 grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-2 md:items-end">
+        {authMode === "signup" && <>
+          <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Your name</label><input required value={displayName} onChange={e=>setDisplayName(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="Eager" /></div>
+          <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">Username</label><input required value={username} onChange={e=>setUsername(e.target.value.replace(/\\s/g, ""))} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="ebeaver091" autoCapitalize="none" /></div>
+        </>}
+        <div className={authMode === "signup" ? "md:col-span-2" : ""}><label className="mb-1 block text-xs font-semibold text-muted-foreground">Email address</label><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm" placeholder="you@example.com" autoComplete="email" /></div>
+        <button disabled={busy} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Sending code…" : authMode === "signup" ? "Sign up with email code" : "Email me a login code"}</button>
+        <button type="button" onClick={() => setAuthMode(authMode === "signup" ? "signin" : "signup")} className="h-10 px-2 text-sm font-semibold text-primary">{authMode === "signup" ? "I already have an account" : "Create account"}</button>
+      </form> : <form onSubmit={submitEmailCode} className="mb-6 grid gap-3 rounded-2xl border border-border bg-card p-4">
+        <h2 className="font-display text-lg font-bold">Enter your email code</h2>
+        <p className="text-sm text-muted-foreground">We sent a six-digit code to <strong>{email}</strong>. Enter it below to {authMode === "signup" ? "finish creating your account" : "sign in"}.</p>
+        <label className="text-xs font-semibold text-muted-foreground" htmlFor="quizvault-email-otp">Six-digit code</label>
+        <input id="quizvault-email-otp" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={otpCode} onChange={e=>setOtpCode(e.target.value.replace(/\\D/g, "").slice(0,6))} className="h-12 w-full rounded-lg border border-input bg-background px-3 text-center text-xl tracking-[.35em]" placeholder="000000" />
+        <button disabled={busy || otpCode.length !== 6} className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy ? "Verifying…" : "Verify code and continue"}</button>
+        <div className="flex flex-wrap gap-4 text-sm"><button type="button" disabled={busy} onClick={() => { setOtpSent(false); setOtpCode(""); setError(""); setNotice(""); }} className="font-semibold text-primary">Change email / back</button><button type="button" disabled={busy} onClick={() => void doAuth({ preventDefault: () => {} } as FormEvent)} className="font-semibold text-primary">Resend code</button></div>
+      </form>)}}
       {session && <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"><span className="text-sm text-muted-foreground">Cloud sync is active for this account when Supabase is configured.</span><button onClick={() => { signOut(); setSession(null); setFiles([]); setItems(loadLocalItems()); }} className="text-sm font-semibold text-primary">Sign out</button></div>}
       {tab === "overview" && <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{[{label:"Files",value:files.length,icon:FileText},{label:"Open tasks",value:counts.tasks,icon:CalendarDays},{label:"Projects",value:counts.projects,icon:FolderKanban},{label:"Journey & trips",value:counts.journeys+counts.trips,icon:Compass}].map((c,i)=>{const Icon=c.icon;return <div key={i} className="rounded-2xl border border-border bg-card p-5"><div className="flex items-center justify-between text-sm text-muted-foreground"><span>{c.label}</span><Icon className="h-4 w-4 text-primary" /></div><p className="mt-3 font-display text-3xl font-bold">{c.value}</p></div>;})}</div>
